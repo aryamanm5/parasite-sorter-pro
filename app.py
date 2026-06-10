@@ -1,10 +1,8 @@
 import os
-import json
 import zipfile
 import base64
 import shutil
 import uuid
-import time
 from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
 from flask import Flask, render_template_string, jsonify, request, send_file, session
@@ -72,6 +70,7 @@ def get_session_id():
 
 def get_session_data():
     session_id = get_session_id()
+
     with sessions_lock:
         if session_id not in sessions_data:
             session_dir = os.path.join(UPLOAD_FOLDER, session_id)
@@ -102,8 +101,10 @@ def get_session_data():
 
 def cleanup_old_sessions():
     cutoff = datetime.now() - timedelta(hours=SESSION_TIMEOUT_HOURS)
+
     with sessions_lock:
         expired = [sid for sid, data in sessions_data.items() if data['last_access'] < cutoff]
+
         for sid in expired:
             try:
                 shutil.rmtree(sessions_data[sid]['session_dir'], ignore_errors=True)
@@ -129,8 +130,14 @@ def get_mime_type(img_data):
 def is_heading(text):
     clean = text.strip().lower()
     headings = [
-        "early ring", "middle ring", "late ring", "trophozoites",
-        "schizonts", "gametocytes", "merozoites", "hemozoin",
+        "early ring",
+        "middle ring",
+        "late ring",
+        "trophozoites",
+        "schizonts",
+        "gametocytes",
+        "merozoites",
+        "hemozoin",
         "plasmodium falciparum staging"
     ]
     return any(clean == h or clean.startswith(h) for h in headings)
@@ -171,6 +178,7 @@ def extract_docx_content(docx_path):
 
             for p in body.findall('.//w:p', namespaces):
                 text_pieces = []
+
                 for t in p.findall('.//w:t', namespaces):
                     if t.text:
                         text_pieces.append(t.text)
@@ -180,9 +188,11 @@ def extract_docx_content(docx_path):
 
                 for blip in p.findall('.//a:blip', namespaces):
                     embed_id = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+
                     if embed_id and embed_id in rels:
                         img_path = rels[embed_id]
                         full_img_path = img_path if img_path.startswith('word/') else 'word/' + img_path
+
                         try:
                             img_data = docx.read(full_img_path)
                             mime = get_mime_type(img_data)
@@ -193,9 +203,11 @@ def extract_docx_content(docx_path):
 
                 for img_data_elem in p.findall('.//v:imagedata', namespaces):
                     rel_id = img_data_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+
                     if rel_id and rel_id in rels:
                         img_path = rels[rel_id]
                         full_img_path = img_path if img_path.startswith('word/') else 'word/' + img_path
+
                         try:
                             img_data = docx.read(full_img_path)
                             mime = get_mime_type(img_data)
@@ -245,6 +257,7 @@ def get_sorted_counts(sorted_dir):
 
     for class_name in CLASS_MAPPING.values():
         class_dir = os.path.join(sorted_dir, class_name)
+
         if os.path.exists(class_dir):
             counts[class_name] = len(get_images_list(class_dir))
         else:
@@ -354,8 +367,10 @@ def upload_images():
                     if os.path.exists(target_path):
                         base, ext = os.path.splitext(safe_name)
                         counter = 1
+
                         while os.path.exists(os.path.join(session_data['unsorted_dir'], f"{base}_{counter}{ext}")):
                             counter += 1
+
                         target_path = os.path.join(session_data['unsorted_dir'], f"{base}_{counter}{ext}")
 
                     with open(target_path, 'wb') as f:
@@ -381,9 +396,9 @@ def upload_images():
 @app.route('/upload_docx', methods=['POST'])
 def upload_docx():
     """
-    This route now accepts either DOCX or PDF.
+    This route accepts either DOCX or PDF.
 
-    The frontend still uses the same endpoint and field name:
+    Frontend field name remains:
         docx_file
 
     Accepted:
@@ -472,6 +487,7 @@ def get_state():
 @app.route('/get_docx_content', methods=['GET'])
 def get_docx_content():
     session_data = get_session_data()
+
     return jsonify({
         'success': True,
         'content': session_data['docx_content'],
@@ -515,8 +531,10 @@ def classify():
     if os.path.exists(dst_path):
         base, ext = os.path.splitext(img_name)
         counter = 1
+
         while os.path.exists(os.path.join(target_dir, f"{base}_{counter}{ext}")):
             counter += 1
+
         stored_name = f"{base}_{counter}{ext}"
         dst_path = os.path.join(target_dir, stored_name)
 
@@ -562,8 +580,10 @@ def undo():
     if os.path.exists(restoration_target):
         base, ext = os.path.splitext(entry['original_filename'])
         counter = 1
+
         while os.path.exists(os.path.join(entry['src_dir'], f"{base}_{counter}{ext}")):
             counter += 1
+
         restoration_target = os.path.join(entry['src_dir'], f"{base}_{counter}{ext}")
 
     try:
@@ -684,13 +704,13 @@ HTML_TEMPLATE = """
         }
 
         #left-panel {
-            width: 380px;
-            min-width: 300px;
+            width: 410px;
+            min-width: 320px;
             height: 100vh;
             overflow-y: auto;
             border-right: 2px solid #cbd5e1;
             background-color: #ffffff;
-            padding: 20px;
+            padding: 18px;
             flex-shrink: 0;
         }
 
@@ -702,54 +722,15 @@ HTML_TEMPLATE = """
             margin-bottom: 15px;
         }
 
-        .upload-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            border: 2px dashed #cbd5e1;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .upload-section h3 {
-            color: #475569;
-            margin-bottom: 12px;
-            font-size: 15px;
-        }
-
-        .upload-btn {
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s;
-            margin: 4px;
-            display: inline-block;
-        }
-
-        .upload-btn:hover {
-            background-color: #1d4ed8;
-        }
-
-        .upload-btn.secondary {
-            background-color: #64748b;
-        }
-
-        .upload-btn.secondary:hover {
-            background-color: #475569;
-        }
-
         input[type="file"] {
             display: none;
         }
 
         .upload-status {
-            margin-top: 8px;
+            margin-top: 6px;
             font-size: 12px;
             color: #64748b;
+            word-break: break-word;
         }
 
         .upload-status.success {
@@ -759,6 +740,12 @@ HTML_TEMPLATE = """
 
         .upload-status.error {
             color: #dc2626;
+        }
+
+        .compact-status {
+            font-size: 11px;
+            min-height: 14px;
+            margin-bottom: 5px;
         }
 
         .doc-paragraph {
@@ -800,11 +787,107 @@ HTML_TEMPLATE = """
 
         .pdf-guide-frame {
             width: 100%;
-            height: calc(100vh - 245px);
-            min-height: 450px;
+            height: calc(100vh - 90px);
+            min-height: 600px;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
             background: white;
+        }
+
+        .left-guide-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+
+        .top-panel-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .builtin-guide-img {
+            max-width: 100%;
+            object-fit: contain;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            cursor: zoom-in;
+        }
+
+        .left-builtin-guide-img {
+            width: 100%;
+            max-height: 270px;
+        }
+
+        .builtin-guide-pdf,
+        .left-builtin-guide-pdf {
+            width: 100%;
+            height: 270px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+        }
+
+        .cue-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: white;
+        }
+
+        .cue-table th {
+            background: #0f172a;
+            color: white;
+            padding: 7px 8px;
+            border: 1px solid #334155;
+            text-align: center;
+        }
+
+        .cue-table th:first-child {
+            text-align: left;
+        }
+
+        .cue-table td {
+            border: 1px solid #cbd5e1;
+            padding: 6px 8px;
+            vertical-align: middle;
+        }
+
+        .cue-table td:not(:first-child) {
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .cue-table tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .decision-flow {
+            margin-left: 18px;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #334155;
+        }
+
+        .decision-flow li {
+            margin-bottom: 10px;
+        }
+
+        .decision-flow b {
+            display: block;
+            color: #0f172a;
+        }
+
+        .decision-flow span {
+            display: inline-block;
+            margin-top: 2px;
+            color: #2563eb;
+            font-weight: 800;
         }
 
         #right-panel {
@@ -882,97 +965,6 @@ HTML_TEMPLATE = """
             overflow: hidden;
         }
 
-        .top-guide-panel {
-            height: 225px;
-            min-height: 180px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px;
-            display: flex;
-            gap: 14px;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .visual-guide-box {
-            width: 38%;
-            min-width: 260px;
-            border-right: 1px solid #e2e8f0;
-            padding-right: 12px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .cue-table-box {
-            flex: 1;
-            overflow: auto;
-        }
-
-        .top-panel-title {
-            font-size: 13px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        .builtin-guide-img {
-            max-width: 100%;
-            max-height: 170px;
-            object-fit: contain;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            background: #f8fafc;
-            cursor: zoom-in;
-        }
-
-        .builtin-guide-pdf {
-            width: 100%;
-            height: 170px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-        }
-
-        .cue-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            background: white;
-        }
-
-        .cue-table th {
-            background: #0f172a;
-            color: white;
-            padding: 7px 8px;
-            border: 1px solid #334155;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        .cue-table th:first-child {
-            text-align: left;
-        }
-
-        .cue-table td {
-            border: 1px solid #cbd5e1;
-            padding: 6px 8px;
-            vertical-align: middle;
-        }
-
-        .cue-table td:not(:first-child) {
-            text-align: center;
-            font-weight: 700;
-        }
-
-        .cue-table tr:nth-child(even) {
-            background: #f8fafc;
-        }
-
         .main-workspace-row {
             flex: 1;
             display: flex;
@@ -1014,11 +1006,12 @@ HTML_TEMPLATE = """
             background: #2563eb;
             color: white;
             font-weight: 800;
-            width: 32px;
+            min-width: 32px;
             height: 30px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            padding: 0 8px;
         }
 
         .zoom-btn:hover {
@@ -1078,7 +1071,7 @@ HTML_TEMPLATE = """
         }
 
         .sidebar-controls {
-            width: 220px;
+            width: 230px;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -1155,6 +1148,27 @@ HTML_TEMPLATE = """
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s;
+        }
+
+        .btn-upload-main {
+            background-color: #2563eb;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .btn-upload-main:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-upload-guide {
+            background-color: #64748b;
+            color: white;
+            margin-top: 8px;
+            margin-bottom: 4px;
+        }
+
+        .btn-upload-guide:hover {
+            background-color: #475569;
         }
 
         .btn-undo {
@@ -1243,14 +1257,14 @@ HTML_TEMPLATE = """
             border-radius: 8px;
         }
 
-        @media (max-width: 1100px) {
-            .top-guide-panel {
-                height: 260px;
+        @media (max-width: 1000px) {
+            #left-panel {
+                width: 360px;
+                min-width: 300px;
             }
 
-            .visual-guide-box {
-                width: 34%;
-                min-width: 220px;
+            .sidebar-controls {
+                width: 200px;
             }
 
             .cue-table {
@@ -1258,7 +1272,7 @@ HTML_TEMPLATE = """
             }
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 850px) {
             body {
                 flex-direction: column;
             }
@@ -1271,10 +1285,6 @@ HTML_TEMPLATE = """
 
             #right-panel {
                 height: 65vh;
-            }
-
-            .top-guide-panel {
-                display: none;
             }
 
             .sidebar-controls {
@@ -1292,34 +1302,113 @@ HTML_TEMPLATE = """
     <div id="left-panel">
         <h1>🔬 Parasite Image Sorter</h1>
 
-        <div class="upload-section">
-            <h3>📁 Upload Your Files</h3>
+        <div id="left-default-guide" style="{% if guide_type or doc_elements %}display:none;{% endif %}">
+            <div class="left-guide-card">
+                <div class="top-panel-title">Visual Guide</div>
 
-            <div>
-                <input type="file" id="images-input" accept=".zip">
-                <button class="upload-btn" onclick="document.getElementById('images-input').click()">
-                    📦 Upload Images ZIP
-                </button>
+                {% if visual_guide.exists and visual_guide.type == 'image' %}
+                    <img class="builtin-guide-img left-builtin-guide-img" src="{{ visual_guide.url }}" onclick="triggerZoom('{{ visual_guide.url }}')" alt="Visual Guide">
+                {% elif visual_guide.exists and visual_guide.type == 'pdf' %}
+                    <iframe class="left-builtin-guide-pdf" src="{{ visual_guide.url }}"></iframe>
+                {% else %}
+                    <div class="placeholder-msg" style="font-size:12px;">
+                        Add your visual guide file to GitHub and set
+                        <br><b>TOP_VISUAL_GUIDE_FILE</b>
+                        <br>near the top of app.py.
+                    </div>
+                {% endif %}
             </div>
 
-            <div class="upload-status" id="images-status"></div>
+            <div class="left-guide-card">
+                <div class="top-panel-title">ER / MR / LR Cue Table</div>
 
-            <div style="margin-top: 10px;">
-                <input type="file" id="docx-input" accept=".docx,.pdf">
-                <button class="upload-btn secondary" onclick="document.getElementById('docx-input').click()">
-                    📄 Upload Guide DOCX/PDF
-                </button>
+                <table class="cue-table">
+                    <thead>
+                        <tr>
+                            <th>Cue</th>
+                            <th>ER</th>
+                            <th>MR</th>
+                            <th>LR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Cytoplasm:nucleus ratio</td>
+                            <td>≤ 0.5</td>
+                            <td>0.5–1.0</td>
+                            <td>≥ 1.0</td>
+                        </tr>
+                        <tr>
+                            <td>Appliqué/accolé position</td>
+                            <td>+++</td>
+                            <td>+</td>
+                            <td>–</td>
+                        </tr>
+                        <tr>
+                            <td>Headphone double-dot chromatin</td>
+                            <td>++</td>
+                            <td>+</td>
+                            <td>–</td>
+                        </tr>
+                        <tr>
+                            <td>Crescent/comma cytoplasm</td>
+                            <td>+++</td>
+                            <td>–</td>
+                            <td>–</td>
+                        </tr>
+                        <tr>
+                            <td>Well-formed circular ring</td>
+                            <td>±</td>
+                            <td>+++</td>
+                            <td>+</td>
+                        </tr>
+                        <tr>
+                            <td>Amoeboid cytoplasm</td>
+                            <td>–</td>
+                            <td>±</td>
+                            <td>+</td>
+                        </tr>
+                        <tr>
+                            <td>Maurer’s clefts</td>
+                            <td>–</td>
+                            <td>±</td>
+                            <td>++</td>
+                        </tr>
+                        <tr>
+                            <td>Hemozoin pigment</td>
+                            <td>–</td>
+                            <td>±</td>
+                            <td>+</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            <div class="upload-status" id="docx-status"></div>
+            <div class="left-guide-card">
+                <div class="top-panel-title">Quick Decision Flow</div>
 
-            <p style="margin-top: 12px; font-size: 11px; color: #64748b;">
-                ZIP: Contains images to sort<br>
-                Guide: Optional DOCX or PDF reference
-            </p>
+                <ol class="decision-flow">
+                    <li>
+                        <b>Pigment granules or Maurer’s clefts?</b>
+                        <span>→ MR or LR</span>
+                    </li>
+                    <li>
+                        <b>Cytoplasm band ≥ nucleus diameter?</b>
+                        <span>→ LR</span>
+                    </li>
+                    <li>
+                        <b>Cytoplasm band &gt; ½ nucleus diameter?</b>
+                        <span>→ MR</span>
+                    </li>
+                    <li>
+                        <b>Cytoplasm minimal, chromatin-dominant, comma/crescent, appliqué, or double-dot?</b>
+                        <span>→ ER</span>
+                    </li>
+                </ol>
+            </div>
         </div>
 
-        <div id="docx-content">
+        <div id="docx-content" style="{% if not guide_type and not doc_elements %}display:none;{% endif %}">
             {% if guide_type == 'pdf' %}
                 <iframe class="pdf-guide-frame" src="/serve_reference_pdf"></iframe>
             {% elif doc_elements %}
@@ -1338,8 +1427,6 @@ HTML_TEMPLATE = """
                         </div>
                     {% endif %}
                 {% endfor %}
-            {% else %}
-                <div class="placeholder-msg">Upload a DOCX or PDF reference guide to display here.</div>
             {% endif %}
         </div>
     </div>
@@ -1371,89 +1458,6 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="workspace-content">
-            <div class="top-guide-panel">
-                <div class="visual-guide-box">
-                    <div class="top-panel-title">Visual Guide</div>
-
-                    {% if visual_guide.exists and visual_guide.type == 'image' %}
-                        <img class="builtin-guide-img" src="{{ visual_guide.url }}" onclick="triggerZoom('{{ visual_guide.url }}')" alt="Visual Guide">
-                    {% elif visual_guide.exists and visual_guide.type == 'pdf' %}
-                        <iframe class="builtin-guide-pdf" src="{{ visual_guide.url }}"></iframe>
-                    {% else %}
-                        <div class="placeholder-msg" style="font-size:12px;">
-                            Add your visual guide file to GitHub and set
-                            <br><b>TOP_VISUAL_GUIDE_FILE</b>
-                            <br>near the top of app.py.
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="cue-table-box">
-                    <div class="top-panel-title">ER / MR / LR Cue Table</div>
-
-                    <table class="cue-table">
-                        <thead>
-                            <tr>
-                                <th>Cue</th>
-                                <th>ER</th>
-                                <th>MR</th>
-                                <th>LR</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Cytoplasm:nucleus ratio</td>
-                                <td>≤ 0.5</td>
-                                <td>0.5–1.0</td>
-                                <td>≥ 1.0</td>
-                            </tr>
-                            <tr>
-                                <td>Appliqué/accolé position</td>
-                                <td>+++</td>
-                                <td>+</td>
-                                <td>–</td>
-                            </tr>
-                            <tr>
-                                <td>Headphone double-dot chromatin</td>
-                                <td>++</td>
-                                <td>+</td>
-                                <td>–</td>
-                            </tr>
-                            <tr>
-                                <td>Crescent/comma cytoplasm</td>
-                                <td>+++</td>
-                                <td>–</td>
-                                <td>–</td>
-                            </tr>
-                            <tr>
-                                <td>Well-formed circular ring</td>
-                                <td>±</td>
-                                <td>+++</td>
-                                <td>+</td>
-                            </tr>
-                            <tr>
-                                <td>Amoeboid cytoplasm</td>
-                                <td>–</td>
-                                <td>±</td>
-                                <td>+</td>
-                            </tr>
-                            <tr>
-                                <td>Maurer’s clefts</td>
-                                <td>–</td>
-                                <td>±</td>
-                                <td>++</td>
-                            </tr>
-                            <tr>
-                                <td>Hemozoin pigment</td>
-                                <td>–</td>
-                                <td>±</td>
-                                <td>+</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
             <div class="main-workspace-row">
                 <div class="sorting-area" id="sorting-viewport">
                     <div class="placeholder-msg">👆 Upload a ZIP file to begin sorting images</div>
@@ -1472,6 +1476,22 @@ HTML_TEMPLATE = """
                         <div class="badge-item"><div class="badge-left"><span class="key-cap">7</span> Merozoite</div><span class="badge-count" id="count-7">0</span></div>
                         <div class="badge-item"><div class="badge-left"><span class="key-cap">8</span> Indeterm</div><span class="badge-count" id="count-8">0</span></div>
                         <div class="badge-item"><div class="badge-left"><span class="key-cap">9</span> Uninfect</div><span class="badge-count" id="count-9">0</span></div>
+                    </div>
+
+                    <div class="panel-card">
+                        <h3>Upload</h3>
+
+                        <input type="file" id="images-input" accept=".zip">
+                        <button class="btn btn-upload-main" onclick="document.getElementById('images-input').click()">
+                            📦 Upload Images ZIP
+                        </button>
+                        <div class="upload-status compact-status" id="images-status"></div>
+
+                        <input type="file" id="docx-input" accept=".docx,.pdf">
+                        <button class="btn btn-upload-guide" onclick="document.getElementById('docx-input').click()">
+                            📄 Upload Guide DOCX/PDF
+                        </button>
+                        <div class="upload-status compact-status" id="docx-status"></div>
                     </div>
 
                     <div class="panel-card">
@@ -1599,8 +1619,8 @@ HTML_TEMPLATE = """
                     </div>
 
                     <div class="metadata-info">
-                        <div class="filename-text">${state.current_image}</div>
-                        <div class="count-text">Press 1-9 to classify. Use +/− or mouse wheel to zoom. Double-click image for full preview.</div>
+                        <div class="filename-text">${escapeHtml(state.current_image)}</div>
+                        <div class="count-text">Press 1-9 to classify. Use +/− or mouse wheel with Ctrl/Shift to zoom. Double-click image for full preview.</div>
                     </div>
                 `;
             } else {
@@ -1627,7 +1647,7 @@ HTML_TEMPLATE = """
 
             const status = document.getElementById('images-status');
             status.textContent = 'Uploading...';
-            status.className = 'upload-status';
+            status.className = 'upload-status compact-status';
 
             const fd = new FormData();
             fd.append('images_zip', file);
@@ -1641,15 +1661,16 @@ HTML_TEMPLATE = """
                 const data = await res.json();
 
                 status.textContent = data.message;
-                status.className = 'upload-status ' + (data.success ? 'success' : 'error');
+                status.className = 'upload-status compact-status ' + (data.success ? 'success' : 'error');
 
                 if (data.success) {
                     showToast(data.message);
+                    imageZoom = 1.25;
                     await fetchState();
                 }
             } catch(e) {
                 status.textContent = 'Failed';
-                status.className = 'upload-status error';
+                status.className = 'upload-status compact-status error';
             }
 
             e.target.value = '';
@@ -1662,7 +1683,7 @@ HTML_TEMPLATE = """
 
             const status = document.getElementById('docx-status');
             status.textContent = 'Uploading...';
-            status.className = 'upload-status';
+            status.className = 'upload-status compact-status';
 
             const fd = new FormData();
             fd.append('docx_file', file);
@@ -1676,13 +1697,17 @@ HTML_TEMPLATE = """
                 const data = await res.json();
 
                 status.textContent = data.success ? data.message : data.message;
-                status.className = 'upload-status ' + (data.success ? 'success' : 'error');
+                status.className = 'upload-status compact-status ' + (data.success ? 'success' : 'error');
 
                 if (data.success) {
+                    document.getElementById('left-default-guide').style.display = 'none';
+                    document.getElementById('docx-content').style.display = 'block';
+
                     if (data.guide_type === 'pdf') {
                         renderPdfGuide();
                     } else {
                         const content = await (await fetch('/get_docx_content')).json();
+
                         if (content.content?.length) {
                             renderDocx(content.content);
                         } else {
@@ -1692,13 +1717,16 @@ HTML_TEMPLATE = """
                 }
             } catch(e) {
                 status.textContent = 'Failed';
-                status.className = 'upload-status error';
+                status.className = 'upload-status compact-status error';
             }
 
             e.target.value = '';
         });
 
         function renderPdfGuide() {
+            document.getElementById('left-default-guide').style.display = 'none';
+            document.getElementById('docx-content').style.display = 'block';
+
             document.getElementById('docx-content').innerHTML = `
                 <iframe class="pdf-guide-frame" src="/serve_reference_pdf?t=${Date.now()}"></iframe>
             `;
@@ -1711,6 +1739,9 @@ HTML_TEMPLATE = """
         }
 
         function renderDocx(elements) {
+            document.getElementById('left-default-guide').style.display = 'none';
+            document.getElementById('docx-content').style.display = 'block';
+
             let html = '';
 
             for (const el of elements) {
@@ -1722,9 +1753,11 @@ HTML_TEMPLATE = """
 
                 if (el.images?.length) {
                     html += '<div class="doc-images-container">';
+
                     for (const img of el.images) {
                         html += `<img class="doc-reference-img" src="${img}" onclick="triggerZoom('${img}')">`;
                     }
+
                     html += '</div>';
                 }
             }
@@ -1811,7 +1844,10 @@ HTML_TEMPLATE = """
                 if ((await res.json()).success) {
                     document.getElementById('images-status').textContent = '';
                     document.getElementById('docx-status').textContent = '';
-                    document.getElementById('docx-content').innerHTML = '<div class="placeholder-msg">Upload a DOCX or PDF reference guide to display here.</div>';
+
+                    document.getElementById('docx-content').innerHTML = '';
+                    document.getElementById('docx-content').style.display = 'none';
+                    document.getElementById('left-default-guide').style.display = 'block';
 
                     imageZoom = 1.25;
                     await fetchState();
@@ -1845,9 +1881,11 @@ HTML_TEMPLATE = """
 
         document.addEventListener('wheel', e => {
             const img = document.getElementById('current-image');
+
             if (!img) return;
 
             const container = document.querySelector('.image-container');
+
             if (!container || !container.contains(e.target)) return;
 
             if (e.ctrlKey || e.metaKey || e.shiftKey) {
