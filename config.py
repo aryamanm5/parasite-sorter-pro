@@ -28,7 +28,7 @@ CLASS_MAPPING = {
     '5': 'Schizont',
     '6': 'Gametocyte',
     '7': 'Merozoite',
-    '8': 'Other Artefact',
+    '8': 'Other Artifact',
     '9': 'Platelet',
     '0': 'Uninfected',
     '-': 'Cannot Determine'
