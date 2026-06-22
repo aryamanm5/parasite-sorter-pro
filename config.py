@@ -14,10 +14,10 @@ else:
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp'}
-SESSION_TIMEOUT_HOURS = 2
+SESSION_TIMEOUT_HOURS = 8
 
 # Visual guide file - set this to your guide image/pdf filename
-TOP_VISUAL_GUIDE_FILE = "parasite-sorter-pro/visual_guide.png"
+TOP_VISUAL_GUIDE_FILE = "visual_guide.png"
 
 # Class mapping - keys are keyboard inputs, values are class names
 CLASS_MAPPING = {
