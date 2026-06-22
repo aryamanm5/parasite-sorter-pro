@@ -47,9 +47,9 @@ def extract_images_from_zip(zip_file, unsorted_dir, session_dir):
     return extracted_count
 
 
-def classify_image(session_data, first_label, second_label, status):
+def classify_image(session_data, label, has_alternative, status):
     """
-    Classify current image with labels and status.
+    Classify current image with label, alternative flag, and status.
     Returns success status and message.
     """
     images = get_images_list(session_data['unsorted_dir'])
@@ -60,47 +60,31 @@ def classify_image(session_data, first_label, second_label, status):
     img_name = images[0]
     src_path = os.path.join(session_data['unsorted_dir'], img_name)
     
-    # Get class name from first label
-    first_class = CLASS_MAPPING.get(first_label)
-    if not first_class:
-        return False, 'Invalid first label'
+    # Get class name from label
+    class_name = CLASS_MAPPING.get(label)
+    if not class_name:
+        return False, 'Invalid label'
 
-    # Primary destination
-    primary_dir = os.path.join(session_data['sorted_dir'], first_class, status)
-    primary_filename = get_unique_filename(primary_dir, img_name)
-    primary_path = os.path.join(primary_dir, primary_filename)
+    # Destination
+    dest_dir = os.path.join(session_data['sorted_dir'], class_name, status)
+    dest_filename = get_unique_filename(dest_dir, img_name)
+    dest_path = os.path.join(dest_dir, dest_filename)
 
     try:
-        # Move to primary location
-        shutil.copy2(src_path, primary_path)
-
-        # If second label exists, copy to second choice folder
-        second_class = None
-        second_filename = None
-        
-        if second_label:
-            second_class = CLASS_MAPPING.get(second_label)
-            if second_class:
-                second_dir = os.path.join(session_data['sorted_dir'], second_class, 'Second_Choice')
-                second_filename = get_unique_filename(second_dir, img_name)
-                second_path = os.path.join(second_dir, second_filename)
-                shutil.copy2(src_path, second_path)
-
-        # Remove original
-        os.remove(src_path)
+        # Move to destination
+        shutil.move(src_path, dest_path)
 
         # Record in history
         session_data['history'].append({
             'original_filename': img_name,
-            'primary_filename': primary_filename,
-            'primary_class': first_class,
-            'primary_status': status,
-            'second_class': second_class,
-            'second_filename': second_filename,
+            'dest_filename': dest_filename,
+            'class_name': class_name,
+            'status': status,
+            'has_alternative': has_alternative,
             'src_dir': session_data['unsorted_dir']
         })
 
-        return True, f'Classified as {first_class}'
+        return True, f'Classified as {class_name}'
 
     except Exception as e:
         return False, f'Error classifying: {str(e)}'
@@ -114,12 +98,12 @@ def undo_classification(session_data):
     entry = session_data['history'].pop()
 
     try:
-        # Restore from primary location
-        primary_path = os.path.join(
+        # Restore from destination
+        src_path = os.path.join(
             session_data['sorted_dir'],
-            entry['primary_class'],
-            entry['primary_status'],
-            entry['primary_filename']
+            entry['class_name'],
+            entry['status'],
+            entry['dest_filename']
         )
         
         restore_path = os.path.join(
@@ -127,19 +111,8 @@ def undo_classification(session_data):
             get_unique_filename(entry['src_dir'], entry['original_filename'])
         )
 
-        if os.path.exists(primary_path):
-            shutil.move(primary_path, restore_path)
-
-        # Remove second choice copy if exists
-        if entry['second_class'] and entry['second_filename']:
-            second_path = os.path.join(
-                session_data['sorted_dir'],
-                entry['second_class'],
-                'Second_Choice',
-                entry['second_filename']
-            )
-            if os.path.exists(second_path):
-                os.remove(second_path)
+        if os.path.exists(src_path):
+            shutil.move(src_path, restore_path)
 
         return True, 'Undo successful'
 
@@ -180,16 +153,16 @@ def create_progress_csv(session_data):
     output = io.StringIO()
     writer = csv.DictWriter(
         output, 
-        fieldnames=['filename', 'first_label', 'second_label', 'status']
+        fieldnames=['filename', 'label', 'has_alternative', 'status']
     )
     writer.writeheader()
 
     for entry in session_data['history']:
         writer.writerow({
             'filename': entry['original_filename'],
-            'first_label': entry['primary_class'],
-            'second_label': entry.get('second_class', '') or '',
-            'status': entry['primary_status']
+            'label': entry['class_name'],
+            'has_alternative': str(entry.get('has_alternative', '')).lower() if entry.get('has_alternative') is not None else '',
+            'status': entry['status']
         })
 
     return output.getvalue()
@@ -201,9 +174,9 @@ def load_progress_csv(session_data, csv_file):
         csv_text = csv_file.read().decode('utf-8-sig')
         reader = csv.DictReader(io.StringIO(csv_text))
 
-        required_fields = ['filename', 'first_label', 'status']
+        required_fields = ['filename', 'label', 'status']
         if not reader.fieldnames or not all(f in reader.fieldnames for f in required_fields):
-            return False, 'CSV must include filename, first_label, and status columns', 0
+            return False, 'CSV must include filename, label, and status columns', 0
 
         # Create reverse mapping
         name_to_key = {v: k for k, v in CLASS_MAPPING.items()}
@@ -213,20 +186,26 @@ def load_progress_csv(session_data, csv_file):
 
         for row_index, row in enumerate(reader, start=2):
             filename = os.path.basename((row.get('filename') or '').strip())
-            first_label = (row.get('first_label') or '').strip()
-            second_label = (row.get('second_label') or '').strip()
+            label = (row.get('label') or '').strip()
+            has_alt_str = (row.get('has_alternative') or '').strip().lower()
             status = (row.get('status') or '').strip()
 
-            if not filename or not first_label or status not in ['Usable', 'Limited', 'Unusable']:
+            if not filename or not label or status not in ['Usable', 'Limited', 'Unusable']:
                 errors.append(f"Row {row_index}: invalid data")
                 continue
 
-            # Get key from class name
-            first_key = name_to_key.get(first_label)
-            second_key = name_to_key.get(second_label) if second_label else None
+            # Parse has_alternative
+            has_alternative = None
+            if has_alt_str == 'true':
+                has_alternative = True
+            elif has_alt_str == 'false':
+                has_alternative = False
 
-            if not first_key:
-                errors.append(f"Row {row_index}: unknown class '{first_label}'")
+            # Get key from class name
+            label_key = name_to_key.get(label)
+
+            if not label_key:
+                errors.append(f"Row {row_index}: unknown class '{label}'")
                 continue
 
             src_path = os.path.join(session_data['unsorted_dir'], filename)
@@ -235,7 +214,7 @@ def load_progress_csv(session_data, csv_file):
                 continue  # Skip if file not found
 
             # Classify the image
-            success, msg = classify_image(session_data, first_key, second_key, status)
+            success, msg = classify_image(session_data, label_key, has_alternative, status)
             
             if success:
                 applied += 1

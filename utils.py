@@ -28,8 +28,7 @@ def get_sorted_counts(sorted_dir):
             'total': 0,
             'Usable': 0,
             'Limited': 0,
-            'Unusable': 0,
-            'Second_Choice': 0
+            'Unusable': 0
         }
         
         class_dir = os.path.join(sorted_dir, class_name)
@@ -40,14 +39,13 @@ def get_sorted_counts(sorted_dir):
                 if os.path.exists(status_dir):
                     count = len(get_images_list(status_dir))
                     counts[class_name][status] = count
-                    if status != 'Second_Choice':
-                        counts[class_name]['total'] += count
+                    counts[class_name]['total'] += count
 
     return counts
 
 
 def get_total_sorted(sorted_dir):
-    """Get total number of sorted images (excluding second choice duplicates)."""
+    """Get total number of sorted images."""
     counts = get_sorted_counts(sorted_dir)
     return sum(c['total'] for c in counts.values())
 
@@ -85,8 +83,8 @@ def get_progress_rows(sorted_dir):
             for img_file in get_images_list(status_dir):
                 rows.append({
                     'filename': img_file,
-                    'first_label': class_name,
-                    'second_label': '',
+                    'label': class_name,
+                    'has_alternative': '',
                     'status': status
                 })
 

@@ -1,4 +1,4 @@
-def get_html_template(visual_guide=None):
+def get_html_template(visual_guide=None, default_zoom=4):
     """Return the main HTML template."""
     
     if visual_guide is None:
@@ -11,9 +11,10 @@ def get_html_template(visual_guide=None):
         elif visual_guide.get('type') == 'pdf':
             visual_guide_html = f'<iframe class="guide-pdf" src="{visual_guide["url"]}"></iframe>'
     else:
-        visual_guide_html = '<div class="guide-placeholder"><span>🔬</span><p>Add visual_guide.png to your project folder</p></div>'
+        visual_guide_html = '<div class="guide-placeholder">Add visual_guide.png to your project folder</div>'
 
-    return f'''<!DOCTYPE html>
+    return f'''
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -21,246 +22,242 @@ def get_html_template(visual_guide=None):
     <title>Parasite Classifier</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>">
     <style>
-        /* ─── Design Tokens ──────────────────────────────────────────────── */
         :root {{
-            /* Surface */
-            --bg-app:       #eef0f3;
-            --bg-surface:   #f8f9fa;
-            --bg-raised:    #ffffff;
-            --bg-inset:     #e8eaed;
-            --bg-hover:     #e2e5e9;
-
-            /* Text */
-            --text-hi:      #1a1d21;
-            --text-mid:     #5c6370;
-            --text-lo:      #9ba3ae;
-
-            /* Accent — cool slate-blue, restrained */
-            --accent:       #5b7fa6;
-            --accent-soft:  #dce6f0;
-            --accent-hover: #4a6d92;
-
-            /* Stage badge colors — muted, distinguishable */
-            --stage-ring:   #c9d8e8;
-            --stage-other:  #dde3ea;
-
-            /* Status */
-            --ok-bg:        #d4eadb;
-            --ok-text:      #2d5c3a;
-            --ok-hover:     #c3decc;
-            --warn-bg:      #f0e6c8;
-            --warn-text:    #5c4a1a;
-            --warn-hover:   #e8dbb8;
-            --bad-bg:       #ead8d8;
-            --bad-text:     #5c2e2e;
-            --bad-hover:    #dfc8c8;
-
-            /* Structure */
-            --border:       #d4d8de;
-            --border-lo:    #e8eaed;
-            --radius-s:     6px;
-            --radius-m:     10px;
-            --radius-l:     14px;
-            --shadow-s:     0 1px 3px rgba(0,0,0,.06);
-            --shadow-m:     0 3px 10px rgba(0,0,0,.08);
-
-            /* Type */
-            --font-ui:      -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
-            --font-mono:    'SF Mono', 'Fira Code', monospace;
-            --ease:         cubic-bezier(.4,0,.2,1);
+            --bg-primary: #f2f2f7;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e5e5ea;
+            --bg-card: #fafafa;
+            --text-primary: #1c1c1e;
+            --text-secondary: #8e8e93;
+            --text-tertiary: #aeaeb2;
+            --accent: #a8b5c4;
+            --accent-hover: #94a3b8;
+            
+            /* Matte pastel colors */
+            --pastel-blue: #b8c5d6;
+            --pastel-green: #b8d4c8;
+            --pastel-yellow: #e8dcc4;
+            --pastel-orange: #e4cbb8;
+            --pastel-red: #dfc4c4;
+            --pastel-purple: #c9c4d4;
+            --pastel-pink: #dcc4d4;
+            --pastel-teal: #b8d4d4;
+            
+            /* Status colors - matte */
+            --status-usable: #c8dcc8;
+            --status-usable-hover: #b8d0b8;
+            --status-usable-text: #4a5d4a;
+            --status-limited: #dcd8c4;
+            --status-limited-hover: #d0ccb8;
+            --status-limited-text: #5d5a4a;
+            --status-unusable: #dcc8c8;
+            --status-unusable-hover: #d0b8b8;
+            --status-unusable-text: #5d4a4a;
+            
+            /* Alternative button colors */
+            --alt-no: #c8d4dc;
+            --alt-no-hover: #b8c8d0;
+            --alt-yes: #dcd4c8;
+            --alt-yes-hover: #d0c8b8;
+            
+            --border: #d1d1d6;
+            --border-light: #e5e5ea;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --transition: all 0.2s ease;
         }}
 
-        /* ─── Reset & Base ───────────────────────────────────────────────── */
-        *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        * {{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }}
 
         body {{
-            font-family: var(--font-ui);
-            font-size: 13px;
-            line-height: 1.5;
-            background: var(--bg-app);
-            color: var(--text-hi);
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }}
 
-        /* ─── Header ─────────────────────────────────────────────────────── */
+        /* Header */
         .header {{
-            background: var(--bg-raised);
-            border-bottom: 1px solid var(--border-lo);
-            height: 52px;
-            padding: 0 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-light);
+            padding: 10px 20px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            flex-shrink: 0;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
             z-index: 100;
+            min-height: 56px;
+        }}
+
+        .header-left {{
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }}
 
         .logo {{
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            font-size: 14px;
+            font-size: 17px;
             font-weight: 600;
-            letter-spacing: -0.3px;
-            color: var(--text-hi);
-            white-space: nowrap;
-        }}
-
-        .logo-icon {{
-            font-size: 18px;
-            line-height: 1;
-        }}
-
-        .header-divider {{
-            width: 1px;
-            height: 20px;
-            background: var(--border);
-            flex-shrink: 0;
-        }}
-
-        /* Progress pill */
-        .progress-pill {{
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 5px 12px;
-            background: var(--bg-inset);
+            letter-spacing: -0.3px;
+        }}
+
+        .progress-display {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 14px;
+            background: var(--bg-tertiary);
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
         }}
 
-        .progress-pill.hidden {{ display: none; }}
+        .progress-display.hidden {{
+            display: none;
+        }}
 
-        .progress-nums {{
+        .progress-stat {{
             display: flex;
-            gap: 4px;
-            align-items: baseline;
+            align-items: center;
+            gap: 6px;
         }}
 
-        .progress-nums strong {{
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-hi);
+        .progress-stat-value {{
+            font-weight: 600;
+            color: var(--text-primary);
         }}
 
-        .progress-nums span {{
-            color: var(--text-lo);
-            font-size: 11px;
+        .progress-stat-label {{
+            color: var(--text-secondary);
         }}
 
-        .progress-track {{
-            width: 72px;
-            height: 3px;
+        .progress-bar-mini {{
+            width: 80px;
+            height: 4px;
             background: var(--border);
             border-radius: 2px;
             overflow: hidden;
         }}
 
-        .progress-fill {{
+        .progress-bar-mini-fill {{
             height: 100%;
-            background: var(--accent);
-            transition: width .4s var(--ease);
+            background: var(--pastel-green);
+            transition: width 0.3s ease;
         }}
 
-        /* Spacer */
-        .header-spacer {{ flex: 1; }}
-
-        /* Header action buttons */
         .header-actions {{
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }}
 
-        .header-actions.hidden {{ display: none; }}
+        .header-actions.hidden {{
+            display: none;
+        }}
 
-        input[type="file"] {{ display: none; }}
-
-        /* ─── Buttons ────────────────────────────────────────────────────── */
         .btn {{
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 5px;
-            padding: 6px 12px;
-            font-family: var(--font-ui);
-            font-size: 12px;
+            padding: 7px 14px;
+            font-size: 13px;
             font-weight: 500;
-            border: 1px solid transparent;
-            border-radius: var(--radius-s);
+            border: none;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            transition: background .15s var(--ease), opacity .15s;
+            transition: var(--transition);
             white-space: nowrap;
             letter-spacing: -0.1px;
         }}
 
-        .btn:disabled {{ opacity: .35; cursor: not-allowed; pointer-events: none; }}
-
-        .btn-ghost {{
-            background: transparent;
-            border-color: var(--border);
-            color: var(--text-mid);
-        }}
-        .btn-ghost:hover:not(:disabled) {{
-            background: var(--bg-inset);
-            color: var(--text-hi);
+        .btn:disabled {{
+            opacity: 0.4;
+            cursor: not-allowed;
         }}
 
         .btn-primary {{
-            background: var(--accent-soft);
-            color: var(--accent);
-            border-color: transparent;
+            background: var(--pastel-blue);
+            color: var(--text-primary);
         }}
+
         .btn-primary:hover:not(:disabled) {{
-            background: #cddaeb;
+            background: var(--accent-hover);
+        }}
+
+        .btn-secondary {{
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }}
+
+        .btn-secondary:hover:not(:disabled) {{
+            background: var(--border);
         }}
 
         .btn-success {{
-            background: var(--ok-bg);
-            color: var(--ok-text);
-        }}
-        .btn-success:hover:not(:disabled) {{ background: var(--ok-hover); }}
-
-        .btn-danger-ghost {{
-            background: transparent;
-            border-color: var(--border);
-            color: var(--text-lo);
-        }}
-        .btn-danger-ghost:hover:not(:disabled) {{
-            background: var(--bad-bg);
-            color: var(--bad-text);
-            border-color: transparent;
+            background: var(--status-usable);
+            color: var(--status-usable-text);
         }}
 
-        .btn-icon {{ padding: 6px 8px; }}
+        .btn-success:hover:not(:disabled) {{
+            background: var(--status-usable-hover);
+        }}
 
-        /* ─── Layout ─────────────────────────────────────────────────────── */
-        .layout {{
+        .btn-danger {{
+            background: var(--status-unusable);
+            color: var(--status-unusable-text);
+        }}
+
+        .btn-danger:hover:not(:disabled) {{
+            background: var(--status-unusable-hover);
+        }}
+
+        .btn-icon {{
+            padding: 7px 10px;
+        }}
+
+        /* Main Layout */
+        .main-container {{
             display: flex;
             flex: 1;
             overflow: hidden;
         }}
 
-        /* ─── Sidebar ────────────────────────────────────────────────────── */
+        /* Sidebar */
         .sidebar {{
-            width: 300px;
-            min-width: 200px;
-            max-width: 440px;
-            background: var(--bg-raised);
-            border-right: 1px solid var(--border-lo);
+            width: 320px;
+            min-width: 0;
+            max-width: 450px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-light);
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
-            transition: width .22s var(--ease);
-            flex-shrink: 0;
+            transition: width 0.25s ease;
         }}
 
-        .sidebar.collapsed {{ width: 0 !important; min-width: 0; }}
+        .sidebar.collapsed {{
+            width: 0;
+            min-width: 0;
+        }}
 
         .sidebar-resize {{
             position: absolute;
@@ -269,184 +266,192 @@ def get_html_template(visual_guide=None):
             width: 4px;
             height: 100%;
             cursor: ew-resize;
+            background: transparent;
             z-index: 10;
         }}
-        .sidebar-resize:hover {{ background: var(--accent-soft); }}
+
+        .sidebar-resize:hover {{
+            background: var(--pastel-blue);
+        }}
 
         .sidebar-toggle {{
             position: absolute;
-            left: 300px;
+            left: 320px;
             top: 50%;
             transform: translateY(-50%);
-            width: 14px;
-            height: 36px;
-            background: var(--bg-raised);
-            border: 1px solid var(--border-lo);
+            width: 16px;
+            height: 40px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
             border-left: none;
-            border-radius: 0 5px 5px 0;
+            border-radius: 0 6px 6px 0;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 50;
-            color: var(--text-lo);
-            font-size: 9px;
-            transition: color .15s;
+            transition: var(--transition);
+            color: var(--text-tertiary);
+            font-size: 10px;
         }}
-        .sidebar.collapsed ~ .sidebar-toggle {{ left: 0; }}
-        .sidebar-toggle:hover {{ color: var(--text-mid); background: var(--bg-inset); }}
 
-        .sidebar-body {{
+        .sidebar.collapsed ~ .sidebar-toggle {{
+            left: 0;
+        }}
+
+        .sidebar-toggle:hover {{
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }}
+
+        .sidebar-content {{
             flex: 1;
             overflow-y: auto;
-            padding: 16px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            padding: 16px;
         }}
 
-        /* Sidebar section */
-        .sb-section {{ display: flex; flex-direction: column; gap: 8px; }}
+        .sidebar-section {{
+            margin-bottom: 20px;
+        }}
 
-        .sb-label {{
-            font-size: 10px;
-            font-weight: 700;
+        .sidebar-title {{
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: .8px;
-            color: var(--text-lo);
+            letter-spacing: 0.5px;
+            color: var(--text-tertiary);
+            margin-bottom: 10px;
         }}
 
-        /* Guide */
+        /* Guide styles */
         .guide-image {{
             width: 100%;
-            border-radius: var(--radius-m);
+            border-radius: var(--radius-md);
             cursor: zoom-in;
-            border: 1px solid var(--border-lo);
-            display: block;
+            border: 1px solid var(--border-light);
         }}
 
         .guide-pdf {{
             width: 100%;
-            height: 240px;
-            border: 1px solid var(--border-lo);
-            border-radius: var(--radius-m);
+            height: 250px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
         }}
 
         .guide-placeholder {{
-            padding: 20px;
+            padding: 24px;
             text-align: center;
-            background: var(--bg-inset);
-            border-radius: var(--radius-m);
-            border: 1px dashed var(--border);
-            color: var(--text-lo);
+            color: var(--text-tertiary);
+            font-size: 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
         }}
-        .guide-placeholder span {{ font-size: 22px; display: block; margin-bottom: 6px; }}
-        .guide-placeholder p {{ font-size: 11px; line-height: 1.4; }}
 
-        /* ─── Cue Table ──────────────────────────────────────────────────── */
+        /* Cue Table */
         .cue-table {{
             width: 100%;
             border-collapse: collapse;
             font-size: 11px;
-            border: 1px solid var(--border-lo);
-            border-radius: var(--radius-s);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
             overflow: hidden;
+            border: 1px solid var(--border-light);
         }}
 
         .cue-table th {{
-            background: var(--bg-inset);
-            color: var(--text-mid);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 8px 6px;
             font-weight: 600;
-            padding: 7px 8px;
             text-align: center;
-            border-bottom: 1px solid var(--border);
-            letter-spacing: .3px;
+            border-bottom: 1px solid var(--border-light);
         }}
 
-        .cue-table th:first-child {{ text-align: left; padding-left: 10px; }}
+        .cue-table th:first-child {{
+            text-align: left;
+        }}
 
         .cue-table td {{
-            padding: 6px 8px;
-            border-bottom: 1px solid var(--border-lo);
-            color: var(--text-hi);
-            vertical-align: middle;
+            padding: 6px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
         }}
-
-        .cue-table td:first-child {{ padding-left: 10px; color: var(--text-mid); }}
 
         .cue-table td:not(:first-child) {{
             text-align: center;
-            font-weight: 600;
-            font-size: 12px;
-        }}
-
-        .cue-table tbody tr:last-child td {{ border-bottom: none; }}
-
-        .cue-table tbody tr:hover td {{ background: var(--bg-surface); }}
-
-        /* Presence indicators */
-        .cue-pos {{ color: var(--ok-text); }}
-        .cue-neg {{ color: var(--text-lo); }}
-        .cue-mid {{ color: var(--warn-text); }}
-
-        /* ─── Decision Flow ──────────────────────────────────────────────── */
-        .flow-list {{
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }}
-
-        .flow-item {{
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            padding: 8px 10px;
-            border-radius: var(--radius-s);
-            border: 1px solid var(--border-lo);
-            background: var(--bg-surface);
-        }}
-
-        .flow-item:hover {{ background: var(--bg-inset); }}
-
-        .flow-cue {{
-            font-size: 11px;
-            color: var(--text-hi);
             font-weight: 500;
-            line-height: 1.4;
         }}
 
-        .flow-result {{
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--accent);
-            letter-spacing: .3px;
+        .cue-table tr:last-child td {{
+            border-bottom: none;
         }}
 
-        /* ─── Workspace ──────────────────────────────────────────────────── */
+        .cue-table tr:hover {{
+            background: var(--bg-card);
+        }}
+
+        /* Decision Flow */
+        .decision-flow {{
+            margin: 0;
+            padding-left: 18px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }}
+
+        .decision-flow li {{
+            margin-bottom: 10px;
+        }}
+
+        .decision-flow b {{
+            display: block;
+            color: var(--text-primary);
+            font-weight: 500;
+        }}
+
+        .decision-flow .result {{
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 11px;
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 3px;
+        }}
+
+        /* Workspace */
         .workspace {{
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            min-width: 0;
+            position: relative;
         }}
 
-        /* Image stage */
-        .image-stage {{
+        .workspace-content {{
             flex: 1;
-            margin: 12px 12px 8px;
-            background: var(--bg-raised);
-            border: 1px solid var(--border-lo);
-            border-radius: var(--radius-l);
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
             overflow: hidden;
+        }}
+
+        /* Image Viewer */
+        .image-viewer {{
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+            position: relative;
+            min-height: 300px;
         }}
 
-        .image-scroll {{
+        .image-container {{
             width: 100%;
             height: 100%;
             display: flex;
@@ -460,1002 +465,1497 @@ def get_html_template(visual_guide=None):
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
-            border-radius: var(--radius-s);
-            box-shadow: var(--shadow-m);
-            transition: transform .12s var(--ease);
-            display: block;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-md);
+            transition: transform 0.15s ease;
         }}
 
-        /* Placeholder */
-        .placeholder {{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            color: var(--text-lo);
-            padding: 40px;
-            text-align: center;
-        }}
-
-        .placeholder-icon {{ font-size: 36px; opacity: .7; }}
-        .placeholder-title {{ font-size: 14px; font-weight: 500; color: var(--text-mid); }}
-        .placeholder-sub {{ font-size: 12px; color: var(--text-lo); }}
-
-        /* Filename bar — bottom of stage */
-        .filename-bar {{
+        .image-info {{
             position: absolute;
             bottom: 12px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(26,29,33,.75);
-            color: rgba(255,255,255,.9);
-            padding: 4px 12px;
-            border-radius: 12px;
+            background: rgba(28,28,30,0.8);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 16px;
             font-size: 11px;
             font-weight: 500;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            max-width: 70%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }}
 
-        /* Zoom controls — top right of stage */
         .zoom-controls {{
             position: absolute;
-            top: 10px;
-            right: 10px;
-            display: none;
-            align-items: center;
-            gap: 1px;
-            background: var(--bg-raised);
-            border: 1px solid var(--border-lo);
-            border-radius: var(--radius-s);
-            padding: 3px;
-            box-shadow: var(--shadow-s);
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 2px;
+            background: var(--bg-secondary);
+            padding: 4px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
         }}
 
         .zoom-btn {{
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
             border: none;
             background: transparent;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: var(--transition);
+        }}
+
+        .zoom-btn:hover {{
+            background: var(--bg-tertiary);
+        }}
+
+        .zoom-label {{
+            min-width: 44px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 28px;
+            color: var(--text-secondary);
+        }}
+
+        .placeholder {{
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px;
+        }}
+
+        .placeholder-icon {{
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.8;
+        }}
+
+        .placeholder-text {{
             font-size: 14px;
+            line-height: 1.5;
+        }}
+
+        .placeholder-text small {{
+            color: var(--text-tertiary);
+        }}
+
+        /* Right Panel for Alternative and Status */
+        .right-panel {{
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 10;
+        }}
+
+        .right-panel.hidden {{
+            display: none;
+        }}
+
+        /* Alternative Buttons */
+        .alternative-panel {{
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }}
+
+        .alternative-panel.hidden {{
+            display: none;
+        }}
+
+        .alt-btn {{
+            padding: 10px 16px;
+            font-size: 12px;
             font-weight: 600;
-            color: var(--text-mid);
+            border: 2px solid transparent;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            min-width: 120px;
+            text-align: center;
+            letter-spacing: -0.1px;
+        }}
+
+        .alt-btn:disabled {{
+            opacity: 0.3;
+            cursor: not-allowed;
+        }}
+
+        .alt-btn.no-alt {{
+            background: var(--alt-no);
+            color: var(--text-primary);
+            border-color: var(--alt-no);
+        }}
+
+        .alt-btn.no-alt:hover:not(:disabled) {{
+            background: var(--alt-no-hover);
+            border-color: var(--alt-no-hover);
+        }}
+
+        .alt-btn.yes-alt {{
+            background: var(--alt-yes);
+            color: var(--text-primary);
+            border-color: var(--alt-yes);
+        }}
+
+        .alt-btn.yes-alt:hover:not(:disabled) {{
+            background: var(--alt-yes-hover);
+            border-color: var(--alt-yes-hover);
+        }}
+
+        .alt-hint {{
+            font-size: 9px;
+            font-weight: 500;
+            opacity: 0.7;
+            margin-top: 2px;
+        }}
+
+        /* Status Panel */
+        .status-panel {{
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }}
+
+        .status-panel.hidden {{
+            display: none;
+        }}
+
+        .status-btn {{
+            padding: 10px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 2px solid transparent;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            min-width: 100px;
+            text-align: center;
+            letter-spacing: -0.1px;
+        }}
+
+        .status-btn:disabled {{
+            opacity: 0.3;
+            cursor: not-allowed;
+        }}
+
+        .status-btn.usable {{
+            background: var(--status-usable);
+            color: var(--status-usable-text);
+            border-color: var(--status-usable);
+        }}
+
+        .status-btn.usable:hover:not(:disabled) {{
+            background: var(--status-usable-hover);
+            border-color: var(--status-usable-hover);
+        }}
+
+        .status-btn.limited {{
+            background: var(--status-limited);
+            color: var(--status-limited-text);
+            border-color: var(--status-limited);
+        }}
+
+        .status-btn.limited:hover:not(:disabled) {{
+            background: var(--status-limited-hover);
+            border-color: var(--status-limited-hover);
+        }}
+
+        .status-btn.unusable {{
+            background: var(--status-unusable);
+            color: var(--status-unusable-text);
+            border-color: var(--status-unusable);
+        }}
+
+        .status-btn.unusable:hover:not(:disabled) {{
+            background: var(--status-unusable-hover);
+            border-color: var(--status-unusable-hover);
+        }}
+
+        .status-hint {{
+            font-size: 9px;
+            font-weight: 500;
+            opacity: 0.7;
+            margin-top: 2px;
+        }}
+
+        /* Classification Bar */
+        .classification-bar {{
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-light);
+            padding: 14px 16px;
+        }}
+
+        .classification-bar.hidden {{
+            display: none;
+        }}
+
+        .selection-indicator {{
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background .12s;
-        }}
-        .zoom-btn:hover {{ background: var(--bg-inset); color: var(--text-hi); }}
-
-        .zoom-pct {{
-            min-width: 40px;
-            text-align: center;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-mid);
-            font-variant-numeric: tabular-nums;
-            font-family: var(--font-mono);
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            margin-bottom: 12px;
+            font-size: 12px;
         }}
 
-        /* ─── Classification Bar ─────────────────────────────────────────── */
-        .classbar {{
-            flex-shrink: 0;
-            background: var(--bg-raised);
-            border-top: 1px solid var(--border-lo);
-            padding: 10px 12px 12px;
+        .selection-indicator.hidden {{
             display: none;
         }}
 
-        .classbar.visible {{ display: block; }}
-
-        /* Selection strip */
-        .selection-strip {{
-            display: none;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 10px;
-            background: var(--bg-inset);
-            border-radius: var(--radius-s);
-            margin-bottom: 8px;
-            font-size: 11px;
-            color: var(--text-mid);
-        }}
-
-        .selection-strip.visible {{ display: flex; }}
-
-        .sel-tag {{
+        .selection-tag {{
             display: inline-flex;
             align-items: center;
-            padding: 2px 9px;
+            gap: 4px;
+            padding: 3px 10px;
+            background: var(--pastel-blue);
+            color: var(--text-primary);
             border-radius: 10px;
             font-size: 11px;
             font-weight: 600;
         }}
 
-        .sel-tag.primary {{ background: var(--stage-ring); color: var(--accent-hover); }}
-        .sel-tag.secondary {{ background: var(--warn-bg); color: var(--warn-text); }}
+        .selection-tag.alternative {{
+            background: var(--pastel-orange);
+        }}
 
-        .sel-clear {{
-            margin-left: auto;
+        .step-indicator {{
+            font-size: 10px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }}
+
+        .clear-btn {{
             font-size: 11px;
-            color: var(--text-lo);
+            color: var(--text-tertiary);
             cursor: pointer;
-            padding: 1px 6px;
+            padding: 2px 8px;
             border-radius: 4px;
-            transition: background .12s;
+            transition: var(--transition);
         }}
-        .sel-clear:hover {{ background: var(--bad-bg); color: var(--bad-text); }}
 
-        /* Button groups */
-        .btn-groups {{
+        .clear-btn:hover {{
+            background: var(--status-unusable);
+            color: var(--status-unusable-text);
+        }}
+
+        .button-row {{
             display: flex;
-            flex-direction: column;
             gap: 6px;
+            justify-content: center;
+            margin-bottom: 8px;
         }}
 
-        .btn-group-label {{
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .7px;
-            color: var(--text-lo);
-            margin-bottom: 2px;
-        }}
-
-        .btn-row {{
-            display: flex;
-            gap: 5px;
+        .button-row:last-child {{
+            margin-bottom: 0;
         }}
 
         .class-btn {{
             flex: 1;
+            max-width: 130px;
+            padding: 12px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 3px;
-            padding: 9px 6px 8px;
-            background: var(--bg-surface);
-            border: 1.5px solid var(--border-lo);
-            border-radius: var(--radius-m);
-            cursor: pointer;
-            transition: border-color .12s var(--ease), background .12s var(--ease);
-            font-family: var(--font-ui);
-            position: relative;
+            gap: 4px;
+            letter-spacing: -0.1px;
         }}
 
         .class-btn:hover:not(:disabled) {{
-            border-color: var(--accent);
-            background: var(--accent-soft);
+            border-color: var(--pastel-blue);
+            background: var(--bg-card);
         }}
 
         .class-btn:disabled {{
-            opacity: .22;
+            opacity: 0.25;
             cursor: not-allowed;
         }}
 
         .class-btn.selected {{
-            background: var(--accent-soft);
-            border-color: var(--accent);
+            background: var(--pastel-blue);
+            border-color: var(--accent-hover);
         }}
 
-        .class-btn.adj {{
-            border-color: var(--warn-bg);
-            background: #fdf8ef;
-        }}
-        .class-btn.adj:hover:not(:disabled) {{
-            background: var(--warn-bg);
-            border-color: #c8aa70;
-        }}
-
-        .class-btn-name {{
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-hi);
-            text-align: center;
-            line-height: 1.2;
-            white-space: nowrap;
-        }}
-
-        .class-btn:disabled .class-btn-name {{ color: var(--text-lo); }}
-        .class-btn.selected .class-btn-name {{ color: var(--accent-hover); }}
-
-        .class-btn-key {{
+        .class-btn .key-hint {{
             font-size: 9px;
-            font-weight: 600;
-            font-family: var(--font-mono);
-            color: var(--text-lo);
-            background: var(--bg-inset);
+            color: var(--text-tertiary);
+            font-weight: 500;
+            background: var(--bg-tertiary);
             padding: 1px 5px;
             border-radius: 3px;
-            letter-spacing: .5px;
         }}
 
-        .class-btn.selected .class-btn-key {{
-            background: rgba(91,127,166,.15);
-            color: var(--accent);
+        .class-btn.selected .key-hint {{
+            background: rgba(0,0,0,0.1);
+            color: var(--text-primary);
         }}
 
-        .class-btn-count {{
+        .class-btn .count-badge {{
             font-size: 10px;
-            font-weight: 700;
-            font-family: var(--font-mono);
-            color: var(--text-lo);
-            min-height: 14px;
-        }}
-
-        .class-btn-count.nonzero {{ color: var(--ok-text); }}
-
-        /* ─── Status Panel ───────────────────────────────────────────────── */
-        /* Moved: now lives right of the btn-groups, inline in the classbar */
-        .classbar-inner {{
-            display: flex;
-            gap: 10px;
-            align-items: stretch;
-        }}
-
-        .btn-groups {{ flex: 1; min-width: 0; }}
-
-        .status-panel {{
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            justify-content: center;
-            flex-shrink: 0;
-            width: 100px;
-        }}
-
-        .status-panel.visible {{ display: flex; }}
-
-        .status-btn {{
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            padding: 8px 6px;
-            border: 1.5px solid transparent;
-            border-radius: var(--radius-m);
-            font-family: var(--font-ui);
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: filter .12s;
-            letter-spacing: -0.1px;
-        }}
-
-        .status-btn:disabled {{ opacity: .3; cursor: not-allowed; pointer-events: none; }}
-        .status-btn:not(:disabled):hover {{ filter: brightness(.93); }}
-
-        .status-btn.ok  {{ background: var(--ok-bg);   color: var(--ok-text); }}
-        .status-btn.lim {{ background: var(--warn-bg);  color: var(--warn-text); }}
-        .status-btn.bad {{ background: var(--bad-bg);   color: var(--bad-text); }}
-
-        .status-key {{
-            font-size: 9px;
             font-weight: 600;
-            font-family: var(--font-mono);
-            opacity: .65;
-            background: rgba(0,0,0,.06);
-            padding: 1px 5px;
-            border-radius: 3px;
+            color: var(--text-tertiary);
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 8px;
+            min-width: 20px;
         }}
 
-        /* ─── Toast ──────────────────────────────────────────────────────── */
+        .class-btn .count-badge.has-items {{
+            background: var(--pastel-green);
+            color: var(--status-usable-text);
+        }}
+
+        .class-btn.selected .count-badge {{
+            background: rgba(0,0,0,0.1);
+            color: var(--text-primary);
+        }}
+
+        /* Toast */
         .toast {{
             position: fixed;
-            bottom: 90px;
+            bottom: 100px;
             left: 50%;
-            transform: translateX(-50%) translateY(12px);
-            background: var(--text-hi);
-            color: #fff;
-            padding: 8px 18px;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--text-primary);
+            color: var(--bg-secondary);
+            padding: 10px 20px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
             opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
             pointer-events: none;
-            transition: opacity .25s var(--ease), transform .25s var(--ease);
-            z-index: 2000;
-            white-space: nowrap;
         }}
 
-        .toast.show {{ opacity: 1; transform: translateX(-50%) translateY(0); }}
-        .toast.err  {{ background: var(--bad-text); }}
+        .toast.visible {{
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }}
 
-        /* ─── Lightbox ───────────────────────────────────────────────────── */
+        .toast.error {{
+            background: var(--status-unusable-text);
+        }}
+
+        /* Lightbox */
         .lightbox {{
             display: none;
             position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.82);
-            z-index: 3000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
             align-items: center;
             justify-content: center;
             cursor: zoom-out;
         }}
-        .lightbox.open {{ display: flex; }}
-        .lightbox img {{
-            max-width: 92%;
-            max-height: 92%;
-            border-radius: var(--radius-m);
-            box-shadow: 0 20px 60px rgba(0,0,0,.5);
+
+        .lightbox.visible {{
+            display: flex;
         }}
 
-        /* ─── Upload section ─────────────────────────────────────────────── */
-        #upload-section {{ margin-left: auto; }}
+        .lightbox img {{
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: var(--radius-md);
+        }}
+
+        /* Unsaved Changes Modal */
+        .modal-overlay {{
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }}
+
+        .modal-overlay.visible {{
+            display: flex;
+        }}
+
+        .modal {{
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+        }}
+
+        .modal-title {{
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }}
+
+        .modal-message {{
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }}
+
+        .modal-actions {{
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }}
+
+        /* File Input Hidden */
+        input[type="file"] {{
+            display: none;
+        }}
+
+        /* Responsive */
+        @media (max-width: 900px) {{
+            .sidebar {{
+                width: 280px;
+            }}
+
+            .class-btn {{
+                padding: 10px 6px;
+                font-size: 10px;
+                max-width: 110px;
+            }}
+
+            .right-panel {{
+                position: static;
+                transform: none;
+                flex-direction: row;
+                justify-content: center;
+                padding: 10px;
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-light);
+            }}
+        }}
     </style>
 </head>
 <body>
-
-<!-- Lightbox -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <img id="lightbox-img" src="" alt="Preview">
-</div>
-
-<!-- ── Header ─────────────────────────────────────────────────────────────── -->
-<header class="header">
-    <div class="logo">
-        <span class="logo-icon">🔬</span>
-        Parasite Classifier
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Preview">
     </div>
 
-    <div class="header-divider"></div>
-
-    <div class="progress-pill hidden" id="progress-display">
-        <div class="progress-nums">
-            <strong id="sorted-count">0</strong>
-            <span>done</span>
-        </div>
-        <div class="progress-track">
-            <div class="progress-fill" id="progress-fill"></div>
-        </div>
-        <div class="progress-nums">
-            <strong id="remaining-count">0</strong>
-            <span>left</span>
+    <!-- Unsaved Changes Modal -->
+    <div class="modal-overlay" id="unsaved-modal">
+        <div class="modal">
+            <div class="modal-title">⚠️ Unsaved Changes</div>
+            <div class="modal-message">
+                You have unsorted images and unsaved progress. Are you sure you want to leave? Your progress will be lost.
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeUnsavedModal()">Stay</button>
+                <button class="btn btn-success" onclick="saveAndLeave()">Save Progress</button>
+                <button class="btn btn-danger" onclick="confirmLeave()">Leave Anyway</button>
+            </div>
         </div>
     </div>
 
-    <div class="header-spacer"></div>
-
-    <div class="header-actions hidden" id="header-actions">
-        <button class="btn btn-ghost" id="undo-btn" disabled onclick="executeUndo()">↩ Undo</button>
-        <button class="btn btn-ghost" id="save-btn" disabled onclick="saveProgress()">💾 Save</button>
-        <input type="file" id="progress-input" accept=".csv">
-        <button class="btn btn-ghost" id="load-btn" disabled onclick="document.getElementById('progress-input').click()">📤 Load</button>
-        <button class="btn btn-success" id="download-btn" disabled onclick="downloadSorted()">📥 Download</button>
-        <button class="btn btn-danger-ghost btn-icon" onclick="resetSession()" title="Reset session">⟳</button>
-    </div>
-
-    <div id="upload-section">
-        <input type="file" id="dataset-input" accept=".zip">
-        <button class="btn btn-primary" onclick="document.getElementById('dataset-input').click()">📦 Upload Dataset</button>
-    </div>
-</header>
-
-<!-- ── Layout ─────────────────────────────────────────────────────────────── -->
-<div class="layout">
-
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-resize" id="sidebar-resize"></div>
-        <div class="sidebar-body">
-
-            <div class="sb-section">
-                <div class="sb-label">Visual Guide</div>
-                {visual_guide_html}
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <span>🔬</span>
+                <span>Parasite Classifier</span>
             </div>
 
-            <div class="sb-section">
-                <div class="sb-label">Stage Cues</div>
-                <table class="cue-table">
-                    <thead>
-                        <tr>
-                            <th>Feature</th>
-                            <th>ER</th>
-                            <th>MR</th>
-                            <th>LR</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>Cytoplasm : nucleus</td>    <td class="cue-neg">≤0.5</td> <td class="cue-mid">0.5–1</td> <td class="cue-pos">≥1</td></tr>
-                        <tr><td>Appliqué / accolé</td>      <td class="cue-pos">+++</td>  <td class="cue-mid">+</td>     <td class="cue-neg">–</td></tr>
-                        <tr><td>Double-dot chromatin</td>   <td class="cue-pos">++</td>   <td class="cue-mid">+</td>     <td class="cue-neg">–</td></tr>
-                        <tr><td>Crescent / comma</td>       <td class="cue-pos">+++</td>  <td class="cue-neg">–</td>     <td class="cue-neg">–</td></tr>
-                        <tr><td>Circular ring</td>          <td class="cue-mid">±</td>    <td class="cue-pos">+++</td>   <td class="cue-mid">+</td></tr>
-                        <tr><td>Amoeboid cytoplasm</td>     <td class="cue-neg">–</td>    <td class="cue-mid">±</td>     <td class="cue-mid">+</td></tr>
-                        <tr><td>Maurer's clefts</td>        <td class="cue-neg">–</td>    <td class="cue-mid">±</td>     <td class="cue-pos">++</td></tr>
-                        <tr><td>Hemozoin pigment</td>       <td class="cue-neg">–</td>    <td class="cue-mid">±</td>     <td class="cue-mid">+</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="sb-section">
-                <div class="sb-label">Decision Flow</div>
-                <ol class="flow-list">
-                    <li class="flow-item">
-                        <span class="flow-cue">Cytoplasm band vs nucleus diameter?</span>
-                        <span class="flow-result">→ ER / MR / LR</span>
-                    </li>
-                    <li class="flow-item">
-                        <span class="flow-cue">Pigment granules or Maurer's clefts present?</span>
-                        <span class="flow-result">→ MR or LR</span>
-                    </li>
-                    <li class="flow-item">
-                        <span class="flow-cue">Minimal cytoplasm, comma shape, appliqué, or double-dot?</span>
-                        <span class="flow-result">→ ER</span>
-                    </li>
-                    <li class="flow-item">
-                        <span class="flow-cue">Clean, textbook circular ring?</span>
-                        <span class="flow-result">→ MR</span>
-                    </li>
-                    <li class="flow-item">
-                        <span class="flow-cue">Dense stippling, hemozoin, or amoeboid shape?</span>
-                        <span class="flow-result">→ LR</span>
-                    </li>
-                </ol>
-            </div>
-
-        </div>
-    </aside>
-
-    <!-- Sidebar toggle -->
-    <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
-        <span id="toggle-icon">‹</span>
-    </button>
-
-    <!-- Workspace -->
-    <main class="workspace">
-
-        <!-- Image stage -->
-        <div class="image-stage" id="image-stage">
-
-            <div class="placeholder" id="placeholder">
-                <div class="placeholder-icon">📦</div>
-                <div class="placeholder-title">Upload a ZIP to begin</div>
-                <div class="placeholder-sub">PNG, JPG, GIF, BMP, TIFF, WebP</div>
-            </div>
-
-            <div class="image-scroll" id="image-scroll" style="display:none">
-                <img id="current-image" src="" alt="Current parasite image">
-            </div>
-
-            <div class="zoom-controls" id="zoom-controls">
-                <button class="zoom-btn" onclick="zoomOut()" title="Zoom out">−</button>
-                <span class="zoom-pct" id="zoom-label">100%</span>
-                <button class="zoom-btn" onclick="zoomIn()" title="Zoom in">+</button>
-                <button class="zoom-btn" onclick="resetZoom()" title="Reset zoom" style="font-size:12px;">↺</button>
-            </div>
-
-            <div class="filename-bar" id="filename-bar"></div>
-
-        </div>
-
-        <!-- Classification bar -->
-        <div class="classbar" id="classbar">
-
-            <!-- Selection strip -->
-            <div class="selection-strip" id="selection-strip">
-                <span style="color:var(--text-lo)">Selected:</span>
-                <span class="sel-tag primary" id="sel-first"></span>
-                <span class="sel-tag secondary" id="sel-second" style="display:none"></span>
-                <span class="sel-clear" onclick="clearSelection()">Clear ✕</span>
-            </div>
-
-            <div class="classbar-inner">
-                <div class="btn-groups">
-                    <!-- Row 1: Asexual ring stages -->
-                    <div class="btn-group-label">Asexual Ring Stages</div>
-                    <div class="btn-row">
-                        <button class="class-btn" data-key="1" onclick="selectLabel('1')">
-                            <span class="class-btn-name">Early Ring</span>
-                            <span class="class-btn-key">1</span>
-                            <span class="class-btn-count" id="count-1">0</span>
-                        </button>
-                        <button class="class-btn" data-key="2" onclick="selectLabel('2')">
-                            <span class="class-btn-name">Mid Ring</span>
-                            <span class="class-btn-key">2</span>
-                            <span class="class-btn-count" id="count-2">0</span>
-                        </button>
-                        <button class="class-btn" data-key="3" onclick="selectLabel('3')">
-                            <span class="class-btn-name">Late Ring</span>
-                            <span class="class-btn-key">3</span>
-                            <span class="class-btn-count" id="count-3">0</span>
-                        </button>
-                        <button class="class-btn" data-key="4" onclick="selectLabel('4')">
-                            <span class="class-btn-name">Trophozoite</span>
-                            <span class="class-btn-key">4</span>
-                            <span class="class-btn-count" id="count-4">0</span>
-                        </button>
-                        <button class="class-btn" data-key="5" onclick="selectLabel('5')">
-                            <span class="class-btn-name">Schizont</span>
-                            <span class="class-btn-key">5</span>
-                            <span class="class-btn-count" id="count-5">0</span>
-                        </button>
-                    </div>
-
-                    <!-- Row 2: Other classes -->
-                    <div class="btn-group-label" style="margin-top:4px">Other Classes</div>
-                    <div class="btn-row">
-                        <button class="class-btn" data-key="6" onclick="selectLabel('6')">
-                            <span class="class-btn-name">Gametocyte</span>
-                            <span class="class-btn-key">6</span>
-                            <span class="class-btn-count" id="count-6">0</span>
-                        </button>
-                        <button class="class-btn" data-key="7" onclick="selectLabel('7')">
-                            <span class="class-btn-name">Merozoite</span>
-                            <span class="class-btn-key">7</span>
-                            <span class="class-btn-count" id="count-7">0</span>
-                        </button>
-                        <button class="class-btn" data-key="8" onclick="selectLabel('8')">
-                            <span class="class-btn-name">Artefact</span>
-                            <span class="class-btn-key">8</span>
-                            <span class="class-btn-count" id="count-8">0</span>
-                        </button>
-                        <button class="class-btn" data-key="9" onclick="selectLabel('9')">
-                            <span class="class-btn-name">Platelet</span>
-                            <span class="class-btn-key">9</span>
-                            <span class="class-btn-count" id="count-9">0</span>
-                        </button>
-                        <button class="class-btn" data-key="0" onclick="selectLabel('0')">
-                            <span class="class-btn-name">Uninfected</span>
-                            <span class="class-btn-key">0</span>
-                            <span class="class-btn-count" id="count-0">0</span>
-                        </button>
-                        <button class="class-btn" data-key="-" onclick="selectLabel('-')">
-                            <span class="class-btn-name">Can't Determine</span>
-                            <span class="class-btn-key">−</span>
-                            <span class="class-btn-count" id="count--">0</span>
-                        </button>
-                    </div>
+            <div class="progress-display hidden" id="progress-display">
+                <div class="progress-stat">
+                    <span class="progress-stat-value" id="remaining-count">0</span>
+                    <span class="progress-stat-label">left</span>
                 </div>
-
-                <!-- Status panel — right column -->
-                <div class="status-panel" id="status-panel">
-                    <button class="status-btn ok"  id="status-usable"   onclick="finalizeWithStatus('Usable')"   disabled>
-                        Usable
-                        <span class="status-key">↵</span>
-                    </button>
-                    <button class="status-btn lim" id="status-limited"  onclick="finalizeWithStatus('Limited')"  disabled>
-                        Limited
-                        <span class="status-key">'</span>
-                    </button>
-                    <button class="status-btn bad" id="status-unusable" onclick="finalizeWithStatus('Unusable')" disabled>
-                        Unusable
-                        <span class="status-key">⇧</span>
-                    </button>
+                <div class="progress-bar-mini">
+                    <div class="progress-bar-mini-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-stat">
+                    <span class="progress-stat-value" id="sorted-count">0</span>
+                    <span class="progress-stat-label">done</span>
                 </div>
             </div>
-
         </div>
-    </main>
 
-</div>
+        <div class="header-actions hidden" id="header-actions">
+            <button class="btn btn-secondary" id="undo-btn" disabled onclick="executeUndo()">
+                ↩ Undo
+            </button>
+            <button class="btn btn-secondary" id="save-btn" disabled onclick="saveProgress()">
+                💾 Save
+            </button>
+            <input type="file" id="progress-input" accept=".csv">
+            <button class="btn btn-secondary" id="load-btn" disabled onclick="document.getElementById('progress-input').click()">
+                📤 Load
+            </button>
+            <button class="btn btn-success" id="download-btn" disabled onclick="downloadSorted()">
+                📥 Download
+            </button>
+            <button class="btn btn-danger btn-icon" onclick="resetSession()" title="Reset">
+                🔄
+            </button>
+        </div>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
+        <div id="upload-section">
+            <input type="file" id="dataset-input" accept=".zip">
+            <button class="btn btn-primary" onclick="document.getElementById('dataset-input').click()">
+                📦 Upload Dataset
+            </button>
+        </div>
+    </header>
 
-<script>
-// ── Config ──────────────────────────────────────────────────────────────────
-const CLASS_MAP = {{
-    '1': 'Early Ring',
-    '2': 'Middle Ring',
-    '3': 'Late Ring',
-    '4': 'Trophozoite',
-    '5': 'Schizont',
-    '6': 'Gametocyte',
-    '7': 'Merozoite',
-    '8': 'Other Artefact',
-    '9': 'Platelet',
-    '0': 'Uninfected',
-    '-': 'Cannot Determine'
-}};
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-resize" id="sidebar-resize"></div>
+            <div class="sidebar-content">
+                <!-- Visual Guide -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Visual Guide</div>
+                    {visual_guide_html}
+                </div>
 
-const FIRST_ROW  = ['1','2','3','4','5'];
-const SECOND_ROW = ['6','7','8','9','0','-'];
-const AUTO_ADVANCE = ['0','-'];
+                <!-- Cue Table -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">ER / MR / LR Cues</div>
+                    <table class="cue-table">
+                        <thead>
+                            <tr>
+                                <th>Cue</th>
+                                <th>ER</th>
+                                <th>MR</th>
+                                <th>LR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Cytoplasm:nucleus ratio</td>
+                                <td>≤0.5</td>
+                                <td>0.5–1</td>
+                                <td>≥1</td>
+                            </tr>
+                            <tr>
+                                <td>Appliqué/accolé position</td>
+                                <td>+++</td>
+                                <td>+</td>
+                                <td>–</td>
+                            </tr>
+                            <tr>
+                                <td>Double-dot chromatin</td>
+                                <td>++</td>
+                                <td>+</td>
+                                <td>–</td>
+                            </tr>
+                            <tr>
+                                <td>Crescent/comma cytoplasm</td>
+                                <td>+++</td>
+                                <td>–</td>
+                                <td>–</td>
+                            </tr>
+                            <tr>
+                                <td>Circular ring shape</td>
+                                <td>±</td>
+                                <td>+++</td>
+                                <td>+</td>
+                            </tr>
+                            <tr>
+                                <td>Amoeboid cytoplasm</td>
+                                <td>–</td>
+                                <td>±</td>
+                                <td>+</td>
+                            </tr>
+                            <tr>
+                                <td>Maurer's clefts</td>
+                                <td>–</td>
+                                <td>±</td>
+                                <td>++</td>
+                            </tr>
+                            <tr>
+                                <td>Hemozoin pigment</td>
+                                <td>–</td>
+                                <td>±</td>
+                                <td>+</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-const ADJACENCY = {{
-    '1': ['2'],
-    '2': ['1','3'],
-    '3': ['2','4'],
-    '4': ['3','5'],
-    '5': ['4']
-}};
+                <!-- Decision Flow -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Quick Decision Flow</div>
+                    <ol class="decision-flow">
+                        <li>
+                            <b>Cytoplasm band vs nucleus diameter</b>
+                            <span class="result">→ ER / MR / LR</span>
+                        </li>
+                        <li>
+                            <b>Pigment granules or Maurer's clefts?</b>
+                            <span class="result">→ MR or LR</span>
+                        </li>
+                        <li>
+                            <b>Minimal cytoplasm, chromatin-dominant, comma/crescent, appliqué, or double-dot</b>
+                            <span class="result">→ ER</span>
+                        </li>
+                        <li>
+                            <b>Perfect "textbook" ring shape</b>
+                            <span class="result">→ MR</span>
+                        </li>
+                        <li>
+                            <b>Dense stippling, hemozoin, amoeboid</b>
+                            <span class="result">→ LR</span>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </aside>
 
-// ── State ───────────────────────────────────────────────────────────────────
-let state = {{
-    uploadComplete: false,
-    currentImage: null,
-    remainingCount: 0,
-    historyCount: 0,
-    sortedCounts: {{}},
-    totalSorted: 0,
-    currentSelection: {{ first_label: null, second_label: null }}
-}};
+        <!-- Sidebar Toggle -->
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
+            <span id="toggle-icon">‹</span>
+        </button>
 
-let zoom = 1;
-let sidebarWidth = 300;
+        <!-- Workspace -->
+        <main class="workspace">
+            <div class="workspace-content">
+                <!-- Image Viewer -->
+                <div class="image-viewer" id="image-viewer">
+                    <div class="placeholder" id="placeholder">
+                        <div class="placeholder-icon">📦</div>
+                        <div class="placeholder-text">
+                            Upload a ZIP file to begin<br>
+                            <small>PNG, JPG, GIF, BMP, TIFF, WebP supported</small>
+                        </div>
+                    </div>
 
-// ── Toast ────────────────────────────────────────────────────────────────────
-let toastTimer;
-function showToast(msg, isErr = false) {{
-    const t = document.getElementById('toast');
-    clearTimeout(toastTimer);
-    t.textContent = msg;
-    t.className = 'toast' + (isErr ? ' err' : '');
-    requestAnimationFrame(() => t.classList.add('show'));
-    toastTimer = setTimeout(() => t.className = 'toast', 2600);
-}}
+                    <div class="image-container" id="image-container" style="display: none;">
+                        <img id="current-image" src="" alt="Current image">
+                    </div>
 
-// ── Lightbox ─────────────────────────────────────────────────────────────────
-function openLightbox(src) {{
-    document.getElementById('lightbox-img').src = src;
-    document.getElementById('lightbox').classList.add('open');
-}}
-function closeLightbox() {{
-    document.getElementById('lightbox').classList.remove('open');
-}}
+                    <div class="zoom-controls" id="zoom-controls" style="display: none;">
+                        <button class="zoom-btn" onclick="zoomOut()">−</button>
+                        <span class="zoom-label" id="zoom-label">100%</span>
+                        <button class="zoom-btn" onclick="zoomIn()">+</button>
+                        <button class="zoom-btn" onclick="resetZoom()">↺</button>
+                    </div>
 
-// ── Zoom ─────────────────────────────────────────────────────────────────────
-function setZoom(z) {{
-    zoom = Math.max(.25, Math.min(4, z));
-    const img = document.getElementById('current-image');
-    if (img) img.style.transform = `scale(${{zoom}})`;
-    document.getElementById('zoom-label').textContent = Math.round(zoom * 100) + '%';
-}}
-function zoomIn()    {{ setZoom(zoom + .25); }}
-function zoomOut()   {{ setZoom(zoom - .25); }}
-function resetZoom() {{ setZoom(1); }}
+                    <div class="image-info" id="image-info" style="display: none;">
+                        <span id="filename-display"></span>
+                    </div>
 
-// ── Sidebar ──────────────────────────────────────────────────────────────────
-function toggleSidebar() {{
-    const sb   = document.getElementById('sidebar');
-    const icon = document.getElementById('toggle-icon');
-    const tog  = document.getElementById('sidebar-toggle');
-    sb.classList.toggle('collapsed');
-    if (sb.classList.contains('collapsed')) {{
-        icon.textContent = '›';
-        tog.style.left = '0';
-    }} else {{
-        icon.textContent = '‹';
-        tog.style.left = sidebarWidth + 'px';
-    }}
-}}
+                    <!-- Right Panel for Alternative and Status -->
+                    <div class="right-panel hidden" id="right-panel">
+                        <!-- Alternative Panel -->
+                        <div class="alternative-panel hidden" id="alternative-panel">
+                            <button class="alt-btn no-alt" onclick="selectAlternative(false)" id="alt-no">
+                                No Alternative
+                                <div class="alt-hint">Enter</div>
+                            </button>
+                            <button class="alt-btn yes-alt" onclick="selectAlternative(true)" id="alt-yes">
+                                One Alternative
+                                <div class="alt-hint">Shift</div>
+                            </button>
+                        </div>
 
-(function initResize() {{
-    const sb   = document.getElementById('sidebar');
-    const rsz  = document.getElementById('sidebar-resize');
-    const tog  = document.getElementById('sidebar-toggle');
-    let dragging = false;
-    rsz.addEventListener('mousedown', () => {{
-        dragging = true;
-        document.body.style.cursor = 'ew-resize';
-        document.body.style.userSelect = 'none';
-    }});
-    document.addEventListener('mousemove', e => {{
-        if (!dragging) return;
-        const w = Math.max(0, Math.min(440, e.clientX));
-        sidebarWidth = w;
-        if (w < 80) {{
-            sb.classList.add('collapsed');
-            tog.style.left = '0';
-            document.getElementById('toggle-icon').textContent = '›';
-        }} else {{
-            sb.classList.remove('collapsed');
-            sb.style.width = w + 'px';
-            tog.style.left = w + 'px';
-            document.getElementById('toggle-icon').textContent = '‹';
+                        <!-- Status Panel -->
+                        <div class="status-panel hidden" id="status-panel">
+                            <button class="status-btn usable" onclick="finalizeWithStatus('Usable')" id="status-usable">
+                                Usable
+                                <div class="status-hint">Enter</div>
+                            </button>
+                            <button class="status-btn limited" onclick="finalizeWithStatus('Limited')" id="status-limited">
+                                Limited
+                                <div class="status-hint">'</div>
+                            </button>
+                            <button class="status-btn unusable" onclick="finalizeWithStatus('Unusable')" id="status-unusable">
+                                Unusable
+                                <div class="status-hint">Shift</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classification Bar -->
+            <div class="classification-bar hidden" id="classification-bar">
+                <!-- Selection Indicator -->
+                <div class="selection-indicator hidden" id="selection-indicator">
+                    <span style="color: var(--text-secondary);">Selected:</span>
+                    <span class="selection-tag" id="label-tag"></span>
+                    <span class="selection-tag alternative" id="alt-tag" style="display: none;"></span>
+                    <span class="step-indicator" id="step-indicator"></span>
+                    <span class="clear-btn" onclick="clearSelection()">Clear</span>
+                </div>
+
+                <!-- Row 1: Asexual Stages -->
+                <div class="button-row">
+                    <button class="class-btn" data-key="1" onclick="selectLabel('1')">
+                        Early Ring
+                        <span class="key-hint">1</span>
+                        <span class="count-badge" id="count-1">0</span>
+                    </button>
+                    <button class="class-btn" data-key="2" onclick="selectLabel('2')">
+                        Middle Ring
+                        <span class="key-hint">2</span>
+                        <span class="count-badge" id="count-2">0</span>
+                    </button>
+                    <button class="class-btn" data-key="3" onclick="selectLabel('3')">
+                        Late Ring
+                        <span class="key-hint">3</span>
+                        <span class="count-badge" id="count-3">0</span>
+                    </button>
+                    <button class="class-btn" data-key="4" onclick="selectLabel('4')">
+                        Trophozoite
+                        <span class="key-hint">4</span>
+                        <span class="count-badge" id="count-4">0</span>
+                    </button>
+                    <button class="class-btn" data-key="5" onclick="selectLabel('5')">
+                        Schizont
+                        <span class="key-hint">5</span>
+                        <span class="count-badge" id="count-5">0</span>
+                    </button>
+                </div>
+
+                <!-- Row 2: Other Classes -->
+                <div class="button-row">
+                    <button class="class-btn" data-key="6" onclick="selectLabel('6')">
+                        Gametocyte
+                        <span class="key-hint">6</span>
+                        <span class="count-badge" id="count-6">0</span>
+                    </button>
+                    <button class="class-btn" data-key="7" onclick="selectLabel('7')">
+                        Merozoite
+                        <span class="key-hint">7</span>
+                        <span class="count-badge" id="count-7">0</span>
+                    </button>
+                    <button class="class-btn" data-key="8" onclick="selectLabel('8')">
+                        Other Artefact
+                        <span class="key-hint">8</span>
+                        <span class="count-badge" id="count-8">0</span>
+                    </button>
+                    <button class="class-btn" data-key="9" onclick="selectLabel('9')">
+                        Platelet
+                        <span class="key-hint">9</span>
+                        <span class="count-badge" id="count-9">0</span>
+                    </button>
+                    <button class="class-btn" data-key="0" onclick="selectLabel('0')">
+                        Uninfected
+                        <span class="key-hint">0</span>
+                        <span class="count-badge" id="count-0">0</span>
+                    </button>
+                    <button class="class-btn" data-key="-" onclick="selectLabel('-')">
+                        Cannot Determine
+                        <span class="key-hint">-</span>
+                        <span class="count-badge" id="count--">0</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // =====================================================================
+        // CONFIGURATION
+        // =====================================================================
+        const CLASS_MAP = {{
+            '1': 'Early Ring',
+            '2': 'Middle Ring',
+            '3': 'Late Ring',
+            '4': 'Trophozoite',
+            '5': 'Schizont',
+            '6': 'Gametocyte',
+            '7': 'Merozoite',
+            '8': 'Other Artefact',
+            '9': 'Platelet',
+            '0': 'Uninfected',
+            '-': 'Cannot Determine'
+        }};
+
+        const AUTO_ADVANCE = ['0', '-'];
+        const DEFAULT_ZOOM = {default_zoom};
+
+        // =====================================================================
+        // STATE
+        // =====================================================================
+        let state = {{
+            uploadComplete: false,
+            currentImage: null,
+            remainingCount: 0,
+            historyCount: 0,
+            sortedCounts: {{}},
+            totalSorted: 0,
+            currentSelection: {{
+                label: null,
+                has_alternative: null,
+                step: 'label'
+            }}
+        }};
+
+        let zoom = DEFAULT_ZOOM;
+        let sidebarWidth = 320;
+        let pendingLeave = null;
+
+        // =====================================================================
+        // UNSAVED CHANGES HANDLING
+        // =====================================================================
+        function hasUnsavedChanges() {{
+            return state.uploadComplete && state.remainingCount > 0 && state.historyCount > 0;
         }}
-    }});
-    document.addEventListener('mouseup', () => {{
-        dragging = false;
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-    }});
-}})();
 
-// ── UI Render ────────────────────────────────────────────────────────────────
-function renderUI() {{
-    const {{ uploadComplete, currentImage, totalSorted, remainingCount, historyCount, sortedCounts, currentSelection }} = state;
-    const hasImage   = !!currentImage;
-    const hasSel     = !!currentSelection.first_label;
-    const hasSorted  = totalSorted > 0;
-
-    // Header
-    document.getElementById('header-actions').classList.toggle('hidden', !uploadComplete);
-    document.getElementById('progress-display').classList.toggle('hidden', !uploadComplete);
-    document.getElementById('upload-section').style.display = uploadComplete ? 'none' : '';
-
-    // Progress
-    document.getElementById('sorted-count').textContent    = totalSorted;
-    document.getElementById('remaining-count').textContent = remainingCount;
-    const total = remainingCount + totalSorted;
-    document.getElementById('progress-fill').style.width =
-        total > 0 ? Math.round((totalSorted / total) * 100) + '%' : '0%';
-
-    // Header buttons
-    document.getElementById('undo-btn').disabled     = historyCount === 0;
-    document.getElementById('save-btn').disabled     = !hasSorted;
-    document.getElementById('load-btn').disabled     = !uploadComplete;
-    document.getElementById('download-btn').disabled = !hasSorted;
-
-    // Image area
-    const placeholder = document.getElementById('placeholder');
-    const scroll      = document.getElementById('image-scroll');
-    const zoomCtrl    = document.getElementById('zoom-controls');
-    const fnBar       = document.getElementById('filename-bar');
-
-    if (!uploadComplete) {{
-        placeholder.style.display = '';
-        scroll.style.display      = 'none';
-        zoomCtrl.style.display    = 'none';
-        fnBar.style.display       = 'none';
-    }} else if (hasImage) {{
-        placeholder.style.display = 'none';
-        scroll.style.display      = 'flex';
-        zoomCtrl.style.display    = 'flex';
-        fnBar.style.display       = 'block';
-        document.getElementById('current-image').src =
-            `/serve_image/${{encodeURIComponent(currentImage)}}?t=${{Date.now()}}`;
-        fnBar.textContent = currentImage;
-    }} else {{
-        placeholder.innerHTML = `
-            <div class="placeholder-icon">🎉</div>
-            <div class="placeholder-title">All done!</div>
-            <div class="placeholder-sub">Click Download to get your results</div>`;
-        placeholder.style.display = '';
-        scroll.style.display      = 'none';
-        zoomCtrl.style.display    = 'none';
-        fnBar.style.display       = 'none';
-    }}
-
-    // Classbar visibility
-    const classbar = document.getElementById('classbar');
-    classbar.classList.toggle('visible', uploadComplete && hasImage);
-
-    // Count badges
-    for (const [k, name] of Object.entries(CLASS_MAP)) {{
-        const badge = document.getElementById('count-' + k);
-        if (!badge) continue;
-        const n = (sortedCounts[name] || {{}}).total || 0;
-        badge.textContent = n || '';
-        badge.classList.toggle('nonzero', n > 0);
-    }}
-
-    // Selection strip
-    const strip    = document.getElementById('selection-strip');
-    const selFirst = document.getElementById('sel-first');
-    const selSec   = document.getElementById('sel-second');
-    if (hasSel) {{
-        strip.classList.add('visible');
-        selFirst.textContent = CLASS_MAP[currentSelection.first_label];
-        if (currentSelection.second_label) {{
-            selSec.textContent  = CLASS_MAP[currentSelection.second_label];
-            selSec.style.display = 'inline-flex';
-        }} else {{
-            selSec.style.display = 'none';
+        function showUnsavedModal(callback) {{
+            pendingLeave = callback;
+            document.getElementById('unsaved-modal').classList.add('visible');
         }}
-    }} else {{
-        strip.classList.remove('visible');
-    }}
 
-    // Class buttons
-    const fl = currentSelection.first_label;
-    const sl = currentSelection.second_label;
-    document.querySelectorAll('.class-btn').forEach(btn => {{
-        const k = btn.dataset.key;
-        btn.classList.remove('selected','adj');
-        btn.disabled = !hasImage;
-        if (!hasImage) return;
-        if (k === fl || k === sl) {{
-            btn.classList.add('selected');
-        }} else if (fl) {{
-            if (FIRST_ROW.includes(fl)) {{
-                const adj = ADJACENCY[fl] || [];
-                if (!adj.includes(k)) btn.disabled = true;
-                else btn.classList.add('adj');
+        function closeUnsavedModal() {{
+            document.getElementById('unsaved-modal').classList.remove('visible');
+            pendingLeave = null;
+        }}
+
+        function saveAndLeave() {{
+            saveProgress();
+            closeUnsavedModal();
+            if (pendingLeave) pendingLeave();
+        }}
+
+        function confirmLeave() {{
+            closeUnsavedModal();
+            if (pendingLeave) pendingLeave();
+        }}
+
+        // Beforeunload handler
+        window.addEventListener('beforeunload', (e) => {{
+            if (hasUnsavedChanges()) {{
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }}
+        }});
+
+        // =====================================================================
+        // UI HELPERS
+        // =====================================================================
+        function showToast(message, isError = false) {{
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = isError ? 'toast error visible' : 'toast visible';
+            setTimeout(() => toast.className = 'toast', 2500);
+        }}
+
+        function openLightbox(src) {{
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('visible');
+        }}
+
+        function closeLightbox() {{
+            document.getElementById('lightbox').classList.remove('visible');
+        }}
+
+        function updateUI() {{
+            const uploadComplete = state.uploadComplete;
+            const hasImage = state.currentImage !== null;
+            const hasLabel = state.currentSelection.label !== null;
+            const hasSorted = state.totalSorted > 0;
+            const hasHistory = state.historyCount > 0;
+            const currentStep = state.currentSelection.step;
+
+            // Header visibility
+            document.getElementById('header-actions').classList.toggle('hidden', !uploadComplete);
+            document.getElementById('progress-display').classList.toggle('hidden', !uploadComplete);
+            
+            // Button states
+            document.getElementById('undo-btn').disabled = !hasHistory;
+            document.getElementById('save-btn').disabled = !hasSorted;
+            document.getElementById('load-btn').disabled = !uploadComplete;
+            document.getElementById('download-btn').disabled = !hasSorted;
+
+            // Progress stats
+            document.getElementById('remaining-count').textContent = state.remainingCount;
+            document.getElementById('sorted-count').textContent = state.totalSorted;
+
+            // Progress bar
+            const total = state.remainingCount + state.totalSorted;
+            const pct = total > 0 ? Math.round((state.totalSorted / total) * 100) : 0;
+            document.getElementById('progress-fill').style.width = pct + '%';
+
+            // Update count badges on buttons
+            updateCountBadges();
+
+            // Image viewer
+            const placeholder = document.getElementById('placeholder');
+            const imageContainer = document.getElementById('image-container');
+            const zoomControls = document.getElementById('zoom-controls');
+            const imageInfo = document.getElementById('image-info');
+
+            if (!uploadComplete) {{
+                placeholder.style.display = 'block';
+                imageContainer.style.display = 'none';
+                zoomControls.style.display = 'none';
+                imageInfo.style.display = 'none';
+            }} else if (hasImage) {{
+                placeholder.style.display = 'none';
+                imageContainer.style.display = 'flex';
+                zoomControls.style.display = 'flex';
+                imageInfo.style.display = 'block';
+                
+                const img = document.getElementById('current-image');
+                img.src = `/serve_image/${{encodeURIComponent(state.currentImage)}}?t=${{Date.now()}}`;
+                document.getElementById('filename-display').textContent = state.currentImage;
             }} else {{
-                btn.disabled = true;
+                placeholder.innerHTML = `
+                    <div class="placeholder-icon">🎉</div>
+                    <div class="placeholder-text">
+                        All done!<br>
+                        <small>Click Download to get results</small>
+                    </div>
+                `;
+                placeholder.style.display = 'block';
+                imageContainer.style.display = 'none';
+                zoomControls.style.display = 'none';
+                imageInfo.style.display = 'none';
+            }}
+
+            // Classification bar
+            document.getElementById('classification-bar').classList.toggle('hidden', !uploadComplete || !hasImage);
+            
+            // Right panel visibility
+            const rightPanel = document.getElementById('right-panel');
+            const altPanel = document.getElementById('alternative-panel');
+            const statusPanel = document.getElementById('status-panel');
+
+            rightPanel.classList.toggle('hidden', !uploadComplete || !hasImage || !hasLabel);
+            altPanel.classList.toggle('hidden', currentStep !== 'alternative');
+            statusPanel.classList.toggle('hidden', currentStep !== 'status');
+
+            // Update button states
+            updateButtonStates();
+        }}
+
+        function updateCountBadges() {{
+            for (const [key, name] of Object.entries(CLASS_MAP)) {{
+                const counts = state.sortedCounts[name] || {{ total: 0 }};
+                const count = counts.total || 0;
+                const badge = document.getElementById('count-' + key);
+                
+                if (badge) {{
+                    badge.textContent = count;
+                    badge.classList.toggle('has-items', count > 0);
+                }}
             }}
         }}
-    }});
 
-    // Status buttons
-    ['status-usable','status-limited','status-unusable'].forEach(id => {{
-        document.getElementById(id).disabled = !hasSel;
-    }});
+        function updateButtonStates() {{
+            const label = state.currentSelection.label;
+            const hasAlternative = state.currentSelection.has_alternative;
+            const currentStep = state.currentSelection.step;
+            const hasLabel = label !== null;
 
-    // Status panel visibility
-    document.getElementById('status-panel').classList.toggle('visible', uploadComplete && hasImage);
-}}
+            // Update all class buttons
+            document.querySelectorAll('.class-btn').forEach(btn => {{
+                const key = btn.dataset.key;
+                
+                btn.classList.remove('selected');
+                btn.disabled = false;
 
-// ── API ──────────────────────────────────────────────────────────────────────
-async function fetchState() {{
-    try {{
-        const r = await fetch('/state');
-        const d = await r.json();
-        state.uploadComplete     = d.upload_complete;
-        state.currentImage       = d.current_image;
-        state.remainingCount     = d.remaining_count;
-        state.historyCount       = d.history_count;
-        state.sortedCounts       = d.sorted_counts;
-        state.totalSorted        = d.total_sorted;
-        state.currentSelection   = d.current_selection || {{ first_label: null, second_label: null }};
-        renderUI();
-    }} catch (e) {{ console.error('fetchState error', e); }}
-}}
+                if (!state.currentImage) {{
+                    btn.disabled = true;
+                    return;
+                }}
 
-async function selectLabel(key) {{
-    if (!state.currentImage) return;
-    try {{
-        const r = await fetch('/select_label', {{
-            method: 'POST',
-            headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ key }})
-        }});
-        const d = await r.json();
-        if (d.success) {{
-            if (d.auto_advanced) {{
-                showToast(d.message);
-                Object.assign(state, {{
-                    currentImage:     d.current_image,
-                    remainingCount:   d.remaining_count,
-                    historyCount:     d.history_count,
-                    sortedCounts:     d.sorted_counts,
-                    totalSorted:      d.total_sorted,
-                    currentSelection: d.current_selection
+                if (label === key) {{
+                    btn.classList.add('selected');
+                }}
+
+                // Disable all buttons if we've moved past label selection
+                if (hasLabel && currentStep !== 'label') {{
+                    btn.disabled = true;
+                }}
+            }});
+
+            // Update selection indicator
+            const indicator = document.getElementById('selection-indicator');
+            const labelTag = document.getElementById('label-tag');
+            const altTag = document.getElementById('alt-tag');
+            const stepIndicator = document.getElementById('step-indicator');
+
+            if (hasLabel) {{
+                indicator.classList.remove('hidden');
+                labelTag.textContent = CLASS_MAP[label];
+                
+                if (hasAlternative !== null) {{
+                    altTag.textContent = hasAlternative ? 'Has Alternative' : 'No Alternative';
+                    altTag.style.display = 'inline-flex';
+                }} else {{
+                    altTag.style.display = 'none';
+                }}
+
+                // Show step indicator
+                if (currentStep === 'alternative') {{
+                    stepIndicator.textContent = '→ Select Alternative';
+                }} else if (currentStep === 'status') {{
+                    stepIndicator.textContent = '→ Select Status';
+                }} else {{
+                    stepIndicator.textContent = '';
+                }}
+            }} else {{
+                indicator.classList.add('hidden');
+            }}
+        }}
+
+        // =====================================================================
+        // ZOOM
+        // =====================================================================
+        function setZoom(newZoom) {{
+            zoom = Math.max(0.25, Math.min(8, newZoom));
+            const img = document.getElementById('current-image');
+            if (img) {{
+                img.style.transform = `scale(${{zoom}})`;
+            }}
+            document.getElementById('zoom-label').textContent = Math.round(zoom * 100) + '%';
+        }}
+
+        function zoomIn() {{ setZoom(zoom + 0.25); }}
+        function zoomOut() {{ setZoom(zoom - 0.25); }}
+        function resetZoom() {{ setZoom(DEFAULT_ZOOM); }}
+
+        // =====================================================================
+        // SIDEBAR
+        // =====================================================================
+        function toggleSidebar() {{
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebar-toggle');
+            const icon = document.getElementById('toggle-icon');
+
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {{
+                icon.textContent = '›';
+                toggle.style.left = '0';
+            }} else {{
+                icon.textContent = '‹';
+                toggle.style.left = sidebarWidth + 'px';
+            }}
+        }}
+
+        // Sidebar resize
+        (function initSidebarResize() {{
+            const sidebar = document.getElementById('sidebar');
+            const resizer = document.getElementById('sidebar-resize');
+            const toggle = document.getElementById('sidebar-toggle');
+
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', (e) => {{
+                isResizing = true;
+                document.body.style.cursor = 'ew-resize';
+                document.body.style.userSelect = 'none';
+            }});
+
+            document.addEventListener('mousemove', (e) => {{
+                if (!isResizing) return;
+                
+                const newWidth = Math.max(0, Math.min(450, e.clientX));
+                sidebarWidth = newWidth;
+                
+                if (newWidth < 80) {{
+                    sidebar.classList.add('collapsed');
+                    toggle.style.left = '0';
+                    document.getElementById('toggle-icon').textContent = '›';
+                }} else {{
+                    sidebar.classList.remove('collapsed');
+                    sidebar.style.width = newWidth + 'px';
+                    toggle.style.left = newWidth + 'px';
+                    document.getElementById('toggle-icon').textContent = '‹';
+                }}
+            }});
+
+            document.addEventListener('mouseup', () => {{
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }});
+        }})();
+
+        // =====================================================================
+        // API CALLS
+        // =====================================================================
+        async function fetchState() {{
+            try {{
+                const res = await fetch('/state');
+                const data = await res.json();
+                
+                state.uploadComplete = data.upload_complete;
+                state.currentImage = data.current_image;
+                state.remainingCount = data.remaining_count;
+                state.historyCount = data.history_count;
+                state.sortedCounts = data.sorted_counts;
+                state.totalSorted = data.total_sorted;
+                state.currentSelection = data.current_selection || {{ label: null, has_alternative: null, step: 'label' }};
+                
+                // Set initial zoom
+                setZoom(DEFAULT_ZOOM);
+                updateUI();
+            }} catch (e) {{
+                console.error('Failed to fetch state:', e);
+            }}
+        }}
+
+        async function selectLabel(key) {{
+            if (!state.currentImage) return;
+            if (state.currentSelection.step !== 'label') return;
+
+            try {{
+                const res = await fetch('/select_label', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ key }})
                 }});
-                resetZoom();
-            }} else {{
-                state.currentSelection = d.selection;
+
+                const data = await res.json();
+
+                if (data.success) {{
+                    // Check if auto-advanced
+                    if (data.auto_advanced) {{
+                        showToast(data.message);
+                        state.currentImage = data.current_image;
+                        state.remainingCount = data.remaining_count;
+                        state.historyCount = data.history_count;
+                        state.sortedCounts = data.sorted_counts;
+                        state.totalSorted = data.total_sorted;
+                        state.currentSelection = data.current_selection;
+                        setZoom(DEFAULT_ZOOM);
+                        updateUI();
+                    }} else {{
+                        state.currentSelection = data.selection;
+                        updateUI();
+                    }}
+                }} else {{
+                    showToast(data.message, true);
+                }}
+            }} catch (e) {{
+                showToast('Error selecting label', true);
             }}
-            renderUI();
-        }} else {{
-            showToast(d.message, true);
         }}
-    }} catch {{ showToast('Error selecting label', true); }}
-}}
 
-async function clearSelection() {{
-    try {{
-        const r = await fetch('/clear_selection', {{ method: 'POST' }});
-        const d = await r.json();
-        if (d.success) {{ state.currentSelection = d.selection; renderUI(); }}
-    }} catch {{ showToast('Error clearing', true); }}
-}}
+        async function selectAlternative(hasAlternative) {{
+            if (state.currentSelection.step !== 'alternative') return;
 
-async function finalizeWithStatus(status) {{
-    if (!state.currentSelection.first_label) return;
-    try {{
-        const r = await fetch('/finalize', {{
-            method: 'POST',
-            headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ status }})
+            try {{
+                const res = await fetch('/select_alternative', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ has_alternative: hasAlternative }})
+                }});
+
+                const data = await res.json();
+
+                if (data.success) {{
+                    state.currentSelection = data.selection;
+                    updateUI();
+                }} else {{
+                    showToast(data.message, true);
+                }}
+            }} catch (e) {{
+                showToast('Error selecting alternative', true);
+            }}
+        }}
+
+        async function clearSelection() {{
+            try {{
+                const res = await fetch('/clear_selection', {{ method: 'POST' }});
+                const data = await res.json();
+
+                if (data.success) {{
+                    state.currentSelection = data.selection;
+                    updateUI();
+                }}
+            }} catch (e) {{
+                showToast('Error clearing selection', true);
+            }}
+        }}
+
+        async function finalizeWithStatus(status) {{
+            if (state.currentSelection.step !== 'status') return;
+
+            try {{
+                const res = await fetch('/finalize', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ status }})
+                }});
+
+                const data = await res.json();
+
+                if (data.success) {{
+                    showToast(data.message);
+                    state.currentImage = data.current_image;
+                    state.remainingCount = data.remaining_count;
+                    state.historyCount = data.history_count;
+                    state.sortedCounts = data.sorted_counts;
+                    state.totalSorted = data.total_sorted;
+                    state.currentSelection = data.current_selection;
+                    
+                    setZoom(DEFAULT_ZOOM);
+                    updateUI();
+                }} else {{
+                    showToast(data.message, true);
+                }}
+            }} catch (e) {{
+                showToast('Error finalizing', true);
+            }}
+        }}
+
+        async function executeUndo() {{
+            try {{
+                const res = await fetch('/undo', {{ method: 'POST' }});
+                const data = await res.json();
+
+                if (data.success) {{
+                    showToast('Undo successful');
+                    state.currentImage = data.current_image;
+                    state.remainingCount = data.remaining_count;
+                    state.historyCount = data.history_count;
+                    state.sortedCounts = data.sorted_counts;
+                    state.totalSorted = data.total_sorted;
+                    state.currentSelection = data.current_selection;
+                    
+                    updateUI();
+                }} else {{
+                    showToast(data.message, true);
+                }}
+            }} catch (e) {{
+                showToast('Error undoing', true);
+            }}
+        }}
+
+        function downloadSorted() {{
+            if (state.totalSorted > 0) {{
+                window.location.href = '/download';
+            }}
+        }}
+
+        function saveProgress() {{
+            if (state.totalSorted > 0) {{
+                window.location.href = '/save_progress';
+            }}
+        }}
+
+        async function resetSession() {{
+            if (hasUnsavedChanges()) {{
+                showUnsavedModal(async () => {{
+                    await doReset();
+                }});
+            }} else {{
+                if (!confirm('Reset all data? This cannot be undone.')) return;
+                await doReset();
+            }}
+        }}
+
+        async function doReset() {{
+            try {{
+                const res = await fetch('/reset', {{ method: 'POST' }});
+                const data = await res.json();
+
+                if (data.success) {{
+                    showToast('Session reset');
+                    await fetchState();
+                }}
+            }} catch (e) {{
+                showToast('Error resetting', true);
+            }}
+        }}
+
+        // =====================================================================
+        // FILE UPLOADS
+        // =====================================================================
+        document.getElementById('dataset-input').addEventListener('change', async (e) => {{
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('dataset_zip', file);
+
+            showToast('Uploading...');
+
+            try {{
+                const res = await fetch('/upload_dataset', {{
+                    method: 'POST',
+                    body: formData
+                }});
+
+                const data = await res.json();
+
+                if (data.success) {{
+                    showToast(data.message);
+                    await fetchState();
+                }} else {{
+                    showToast(data.message, true);
+                }}
+            }} catch (e) {{
+                showToast('Upload failed', true);
+            }}
+
+            e.target.value = '';
         }});
-        const d = await r.json();
-        if (d.success) {{
-            showToast(d.message);
-            Object.assign(state, {{
-                currentImage:     d.current_image,
-                remainingCount:   d.remaining_count,
-                historyCount:     d.history_count,
-                sortedCounts:     d.sorted_counts,
-                totalSorted:      d.total_sorted,
-                currentSelection: d.current_selection
-            }});
-            resetZoom();
-            renderUI();
-        }} else {{
-            showToast(d.message, true);
-        }}
-    }} catch {{ showToast('Error finalizing', true); }}
-}}
 
-async function executeUndo() {{
-    try {{
-        const r = await fetch('/undo', {{ method: 'POST' }});
-        const d = await r.json();
-        if (d.success) {{
-            showToast('Undone');
-            Object.assign(state, {{
-                currentImage:     d.current_image,
-                remainingCount:   d.remaining_count,
-                historyCount:     d.history_count,
-                sortedCounts:     d.sorted_counts,
-                totalSorted:      d.total_sorted,
-                currentSelection: d.current_selection
-            }});
-            renderUI();
-        }} else {{
-            showToast(d.message, true);
-        }}
-    }} catch {{ showToast('Error undoing', true); }}
-}}
+        document.getElementById('progress-input').addEventListener('change', async (e) => {{
+            const file = e.target.files[0];
+            if (!file) return;
 
-function downloadSorted() {{ if (state.totalSorted > 0) window.location.href = '/download'; }}
-function saveProgress()   {{ if (state.totalSorted > 0) window.location.href = '/save_progress'; }}
+            const formData = new FormData();
+            formData.append('progress_csv', file);
 
-async function resetSession() {{
-    if (!confirm('Reset all data? This cannot be undone.')) return;
-    try {{
-        const r = await fetch('/reset', {{ method: 'POST' }});
-        const d = await r.json();
-        if (d.success) {{ showToast('Session reset'); await fetchState(); }}
-    }} catch {{ showToast('Error resetting', true); }}
-}}
+            try {{
+                const res = await fetch('/upload_progress', {{
+                    method: 'POST',
+                    body: formData
+                }});
 
-// ── File inputs ──────────────────────────────────────────────────────────────
-document.getElementById('dataset-input').addEventListener('change', async e => {{
-    const file = e.target.files[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append('dataset_zip', file);
-    showToast('Uploading…');
-    try {{
-        const r = await fetch('/upload_dataset', {{ method: 'POST', body: fd }});
-        const d = await r.json();
-        showToast(d.message, !d.success);
-        if (d.success) await fetchState();
-    }} catch {{ showToast('Upload failed', true); }}
-    e.target.value = '';
-}});
+                const data = await res.json();
 
-document.getElementById('progress-input').addEventListener('change', async e => {{
-    const file = e.target.files[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append('progress_csv', file);
-    try {{
-        const r = await fetch('/upload_progress', {{ method: 'POST', body: fd }});
-        const d = await r.json();
-        showToast(d.message, !d.success);
-        if (d.success) {{
-            Object.assign(state, {{
-                currentImage:   d.current_image,
-                remainingCount: d.remaining_count,
-                historyCount:   d.history_count,
-                sortedCounts:   d.sorted_counts,
-                totalSorted:    d.total_sorted
-            }});
-            renderUI();
-        }}
-    }} catch {{ showToast('Progress load failed', true); }}
-    e.target.value = '';
-}});
+                if (data.success) {{
+                    showToast(data.message);
+                    state.currentImage = data.current_image;
+                    state.remainingCount = data.remaining_count;
+                    state.historyCount = data.history_count;
+                    state.sortedCounts = data.sorted_counts;
+                    state.totalSorted = data.total_sorted;
+                    updateUI();
+                }} else {{
+                    showToast(data.message, true);
+                }}
+            }} catch (e) {{
+                showToast('Progress load failed', true);
+            }}
 
-// ── Keyboard ─────────────────────────────────────────────────────────────────
-document.addEventListener('keydown', e => {{
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    const k = e.key;
-    if (/^[0-9]$/.test(k) || k === '-') {{ e.preventDefault(); selectLabel(k); return; }}
-    if (k === 'Enter')     {{ e.preventDefault(); if (state.currentSelection.first_label) finalizeWithStatus('Usable');    return; }}
-    if (k === "'")         {{ e.preventDefault(); if (state.currentSelection.first_label) finalizeWithStatus('Limited');   return; }}
-    if (k === 'Shift')     {{ e.preventDefault(); if (state.currentSelection.first_label) finalizeWithStatus('Unusable'); return; }}
-    if (k === 'z' || k === 'Z' || k === 'Backspace') {{ e.preventDefault(); executeUndo(); return; }}
-    if (k === '+' || k === '=') {{ e.preventDefault(); zoomIn(); return; }}
-    if (k === '_')         {{ e.preventDefault(); zoomOut(); return; }}
-    if (k === 'Escape')    {{ e.preventDefault(); clearSelection(); return; }}
-}});
+            e.target.value = '';
+        }});
 
-document.addEventListener('wheel', e => {{
-    const scroll = document.getElementById('image-scroll');
-    if (!scroll || !scroll.contains(e.target)) return;
-    if (e.ctrlKey || e.metaKey || e.shiftKey) {{
-        e.preventDefault();
-        e.deltaY < 0 ? zoomIn() : zoomOut();
-    }}
-}}, {{ passive: false }});
+        // =====================================================================
+        // KEYBOARD SHORTCUTS
+        // =====================================================================
+        document.addEventListener('keydown', (e) => {{
+            // Ignore if typing in an input or modal is open
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (document.getElementById('unsaved-modal').classList.contains('visible')) return;
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-window.onload = fetchState;
-</script>
+            const key = e.key;
+            const currentStep = state.currentSelection.step;
+
+            // Number keys 0-9 and minus for classification (only in label step)
+            if (currentStep === 'label' && (/^[0-9]$/.test(key) || key === '-')) {{
+                e.preventDefault();
+                selectLabel(key);
+                return;
+            }}
+
+            // Alternative step shortcuts
+            if (currentStep === 'alternative') {{
+                if (key === 'Enter') {{
+                    e.preventDefault();
+                    selectAlternative(false);  // No Alternative
+                    return;
+                }}
+                if (key === 'Shift') {{
+                    e.preventDefault();
+                    selectAlternative(true);   // One Alternative
+                    return;
+                }}
+            }}
+
+            // Status step shortcuts
+            if (currentStep === 'status') {{
+                if (key === 'Enter') {{
+                    e.preventDefault();
+                    finalizeWithStatus('Usable');
+                    return;
+                }}
+                if (key === "'") {{
+                    e.preventDefault();
+                    finalizeWithStatus('Limited');
+                    return;
+                }}
+                if (key === 'Shift') {{
+                    e.preventDefault();
+                    finalizeWithStatus('Unusable');
+                    return;
+                }}
+            }}
+
+            // Undo
+            if (key === 'z' || key === 'Z' || key === 'Backspace') {{
+                e.preventDefault();
+                executeUndo();
+                return;
+            }}
+
+            // Zoom
+            if (key === '+' || key === '=') {{
+                e.preventDefault();
+                zoomIn();
+                return;
+            }}
+
+            if (key === '_') {{
+                e.preventDefault();
+                zoomOut();
+                return;
+            }}
+
+            // Clear selection with Escape
+            if (key === 'Escape') {{
+                e.preventDefault();
+                clearSelection();
+                return;
+            }}
+        }});
+
+        // Zoom with mouse wheel
+        document.addEventListener('wheel', (e) => {{
+            const container = document.getElementById('image-container');
+            if (!container || !container.contains(e.target)) return;
+
+            if (e.ctrlKey || e.metaKey || e.shiftKey) {{
+                e.preventDefault();
+                if (e.deltaY < 0) zoomIn();
+                else zoomOut();
+            }}
+        }}, {{ passive: false }});
+
+        // =====================================================================
+        // INIT
+        // =====================================================================
+        window.onload = fetchState;
+    </script>
 </body>
-</html>'''
+</html>
+'''

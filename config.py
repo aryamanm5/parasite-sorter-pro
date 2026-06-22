@@ -14,7 +14,7 @@ else:
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp'}
-SESSION_TIMEOUT_HOURS = 8
+SESSION_TIMEOUT_HOURS = 2
 
 # Visual guide file - set this to your guide image/pdf filename
 TOP_VISUAL_GUIDE_FILE = "visual_guide.png"
@@ -28,29 +28,20 @@ CLASS_MAPPING = {
     '5': 'Schizont',
     '6': 'Gametocyte',
     '7': 'Merozoite',
-    '8': 'Other Artifact',
+    '8': 'Other Artefact',
     '9': 'Platelet',
     '0': 'Uninfected',
     '-': 'Cannot Determine'
 }
 
-# First row classes (ordered asexual stages) - can have two labels
+# First row classes (ordered asexual stages)
 FIRST_ROW_CLASSES = ['1', '2', '3', '4', '5']
 
-# Second row classes - single label only
+# Second row classes
 SECOND_ROW_CLASSES = ['6', '7', '8', '9', '0', '-']
 
-# Auto-advance classes - these skip status selection and auto-classify as "Usable"
+# Auto-advance classes - these skip alternative and status selection, auto-classify as "Usable"
 AUTO_ADVANCE_CLASSES = ['0', '-']  # Uninfected, Cannot Determine
-
-# Adjacency mapping for first row (which keys can be selected as second label)
-ADJACENCY_MAP = {
-    '1': ['2'],           # Early Ring -> Middle Ring
-    '2': ['1', '3'],      # Middle Ring -> Early Ring, Late Ring
-    '3': ['2', '4'],      # Late Ring -> Middle Ring, Trophozoite
-    '4': ['3', '5'],      # Trophozoite -> Late Ring, Schizont
-    '5': ['4']            # Schizont -> Trophozoite
-}
 
 # Status options
 STATUS_OPTIONS = {
@@ -60,4 +51,7 @@ STATUS_OPTIONS = {
 }
 
 # Subfolders for each class
-STATUS_SUBFOLDERS = ['Usable', 'Limited', 'Unusable', 'Second_Choice']
+STATUS_SUBFOLDERS = ['Usable', 'Limited', 'Unusable']
+
+# Default zoom level (4 = 400%)
+DEFAULT_ZOOM = 4

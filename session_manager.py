@@ -42,8 +42,9 @@ def get_session_data():
                 'history': [],
                 'upload_complete': False,
                 'current_selection': {
-                    'first_label': None,
-                    'second_label': None
+                    'label': None,
+                    'has_alternative': None,
+                    'step': 'label'  # 'label', 'alternative', 'status'
                 }
             }
 
@@ -82,8 +83,9 @@ def cleanup_old_sessions():
 def reset_current_selection(session_data):
     """Reset the current image selection state."""
     session_data['current_selection'] = {
-        'first_label': None,
-        'second_label': None
+        'label': None,
+        'has_alternative': None,
+        'step': 'label'
     }
 
 

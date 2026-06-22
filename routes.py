@@ -2,7 +2,7 @@ import os
 import io
 from flask import jsonify, request, send_file
 
-from config import CLASS_MAPPING, FIRST_ROW_CLASSES, SECOND_ROW_CLASSES, ADJACENCY_MAP, AUTO_ADVANCE_CLASSES, TOP_VISUAL_GUIDE_FILE
+from config import CLASS_MAPPING, AUTO_ADVANCE_CLASSES, TOP_VISUAL_GUIDE_FILE, DEFAULT_ZOOM
 from session_manager import (
     get_session_data, 
     cleanup_old_sessions, 
@@ -29,7 +29,7 @@ def register_routes(app):
         cleanup_old_sessions()
         get_session_data()  # Initialize session
         visual_guide = get_visual_guide_info()
-        return get_html_template(visual_guide)
+        return get_html_template(visual_guide, DEFAULT_ZOOM)
 
     @app.route('/visual_guide')
     def visual_guide():
@@ -92,7 +92,8 @@ def register_routes(app):
             'history_count': len(session_data['history']),
             'sorted_counts': sorted_counts,
             'total_sorted': total_sorted,
-            'current_selection': session_data['current_selection']
+            'current_selection': session_data['current_selection'],
+            'default_zoom': DEFAULT_ZOOM
         })
 
     @app.route('/serve_image/<path:filename>')
@@ -102,7 +103,7 @@ def register_routes(app):
 
     @app.route('/select_label', methods=['POST'])
     def select_label():
-        """Handle label selection (before final classification)."""
+        """Handle label selection (step 1)."""
         session_data = get_session_data()
         data = request.get_json()
         key = data.get('key')
@@ -121,7 +122,7 @@ def register_routes(app):
 
         # Check if this is an auto-advance class
         if key in AUTO_ADVANCE_CLASSES:
-            # Auto-classify as Usable and move to next
+            # Auto-classify as Usable with no alternative, skip both steps
             success, message = classify_image(session_data, key, None, 'Usable')
             
             if success:
@@ -144,40 +145,39 @@ def register_routes(app):
             else:
                 return jsonify({'success': False, 'message': message}), 500
 
-        # If no first label, set it
-        if current['first_label'] is None:
-            current['first_label'] = key
-            
-            # Determine which buttons should be enabled
-            if key in FIRST_ROW_CLASSES:
-                adjacent = ADJACENCY_MAP.get(key, [])
-                enabled_buttons = [key] + adjacent
-            else:
-                enabled_buttons = [key]
+        # Set label and move to alternative step
+        current['label'] = key
+        current['step'] = 'alternative'
 
-            return jsonify({
-                'success': True,
-                'selection': current,
-                'enabled_buttons': enabled_buttons,
-                'can_finalize': True
-            })
+        return jsonify({
+            'success': True,
+            'selection': current,
+            'step': 'alternative'
+        })
 
-        # If first label exists and this is from first row, check adjacency
-        if current['first_label'] in FIRST_ROW_CLASSES and key in ADJACENCY_MAP.get(current['first_label'], []):
-            # Toggle second label
-            if current['second_label'] == key:
-                current['second_label'] = None
-            else:
-                current['second_label'] = key
+    @app.route('/select_alternative', methods=['POST'])
+    def select_alternative():
+        """Handle alternative selection (step 2)."""
+        session_data = get_session_data()
+        data = request.get_json()
+        has_alternative = data.get('has_alternative')
 
-            return jsonify({
-                'success': True,
-                'selection': current,
-                'enabled_buttons': [current['first_label']] + ADJACENCY_MAP.get(current['first_label'], []),
-                'can_finalize': True
-            })
+        current = session_data['current_selection']
 
-        return jsonify({'success': False, 'message': 'Invalid selection'}), 400
+        if current['label'] is None:
+            return jsonify({'success': False, 'message': 'No label selected'}), 400
+
+        if current['step'] != 'alternative':
+            return jsonify({'success': False, 'message': 'Invalid step'}), 400
+
+        current['has_alternative'] = has_alternative
+        current['step'] = 'status'
+
+        return jsonify({
+            'success': True,
+            'selection': current,
+            'step': 'status'
+        })
 
     @app.route('/clear_selection', methods=['POST'])
     def clear_selection():
@@ -192,7 +192,7 @@ def register_routes(app):
 
     @app.route('/finalize', methods=['POST'])
     def finalize():
-        """Finalize classification with status."""
+        """Finalize classification with status (step 3)."""
         session_data = get_session_data()
         data = request.get_json()
         status = data.get('status')
@@ -202,13 +202,16 @@ def register_routes(app):
 
         current = session_data['current_selection']
         
-        if current['first_label'] is None:
+        if current['label'] is None:
             return jsonify({'success': False, 'message': 'No label selected'}), 400
+
+        if current['step'] != 'status':
+            return jsonify({'success': False, 'message': 'Complete alternative selection first'}), 400
 
         success, message = classify_image(
             session_data,
-            current['first_label'],
-            current['second_label'],
+            current['label'],
+            current['has_alternative'],
             status
         )
 
