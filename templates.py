@@ -1,4 +1,6 @@
-def get_html_template(visual_guide=None, default_zoom=4):
+from config import DEFAULT_ZOOM
+
+def get_html_template(visual_guide=None):
     """Return the main HTML template."""
     
     if visual_guide is None:
@@ -12,6 +14,8 @@ def get_html_template(visual_guide=None, default_zoom=4):
             visual_guide_html = f'<iframe class="guide-pdf" src="{visual_guide["url"]}"></iframe>'
     else:
         visual_guide_html = '<div class="guide-placeholder">Add visual_guide.png to your project folder</div>'
+
+    default_zoom_percent = int(DEFAULT_ZOOM * 100)
 
     return f'''
 <!DOCTYPE html>
@@ -53,12 +57,6 @@ def get_html_template(visual_guide=None, default_zoom=4):
             --status-unusable: #dcc8c8;
             --status-unusable-hover: #d0b8b8;
             --status-unusable-text: #5d4a4a;
-            
-            /* Alternative button colors */
-            --alt-no: #c8d4dc;
-            --alt-no-hover: #b8c8d0;
-            --alt-yes: #dcd4c8;
-            --alt-yes-hover: #d0c8b8;
             
             --border: #d1d1d6;
             --border-light: #e5e5ea;
@@ -545,8 +543,8 @@ def get_html_template(visual_guide=None, default_zoom=4):
             color: var(--text-tertiary);
         }}
 
-        /* Right Panel for Alternative and Status */
-        .right-panel {{
+        /* Status Panel */
+        .status-panel {{
             position: absolute;
             right: 16px;
             top: 50%;
@@ -555,75 +553,6 @@ def get_html_template(visual_guide=None, default_zoom=4):
             flex-direction: column;
             gap: 6px;
             z-index: 10;
-        }}
-
-        .right-panel.hidden {{
-            display: none;
-        }}
-
-        /* Alternative Buttons */
-        .alternative-panel {{
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }}
-
-        .alternative-panel.hidden {{
-            display: none;
-        }}
-
-        .alt-btn {{
-            padding: 10px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            border: 2px solid transparent;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: var(--transition);
-            min-width: 120px;
-            text-align: center;
-            letter-spacing: -0.1px;
-        }}
-
-        .alt-btn:disabled {{
-            opacity: 0.3;
-            cursor: not-allowed;
-        }}
-
-        .alt-btn.no-alt {{
-            background: var(--alt-no);
-            color: var(--text-primary);
-            border-color: var(--alt-no);
-        }}
-
-        .alt-btn.no-alt:hover:not(:disabled) {{
-            background: var(--alt-no-hover);
-            border-color: var(--alt-no-hover);
-        }}
-
-        .alt-btn.yes-alt {{
-            background: var(--alt-yes);
-            color: var(--text-primary);
-            border-color: var(--alt-yes);
-        }}
-
-        .alt-btn.yes-alt:hover:not(:disabled) {{
-            background: var(--alt-yes-hover);
-            border-color: var(--alt-yes-hover);
-        }}
-
-        .alt-hint {{
-            font-size: 9px;
-            font-weight: 500;
-            opacity: 0.7;
-            margin-top: 2px;
-        }}
-
-        /* Status Panel */
-        .status-panel {{
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
         }}
 
         .status-panel.hidden {{
@@ -727,14 +656,12 @@ def get_html_template(visual_guide=None, default_zoom=4):
             font-weight: 600;
         }}
 
-        .selection-tag.alternative {{
+        .selection-tag.secondary {{
             background: var(--pastel-orange);
         }}
 
-        .step-indicator {{
-            font-size: 10px;
-            color: var(--text-tertiary);
-            font-weight: 500;
+        .selection-tag.non-adjacent {{
+            background: var(--pastel-red);
         }}
 
         .clear-btn {{
@@ -749,6 +676,21 @@ def get_html_template(visual_guide=None, default_zoom=4):
         .clear-btn:hover {{
             background: var(--status-unusable);
             color: var(--status-unusable-text);
+        }}
+
+        .workflow-stage {{
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }}
+
+        .workflow-stage .stage-label {{
+            background: var(--pastel-purple);
+            padding: 4px 12px;
+            border-radius: 12px;
+            color: var(--text-primary);
         }}
 
         .button-row {{
@@ -797,6 +739,15 @@ def get_html_template(visual_guide=None, default_zoom=4):
             border-color: var(--accent-hover);
         }}
 
+        .class-btn.adjacent {{
+            border-color: var(--pastel-orange);
+            background: var(--bg-card);
+        }}
+
+        .class-btn.adjacent:hover:not(:disabled) {{
+            background: var(--pastel-yellow);
+        }}
+
         .class-btn .key-hint {{
             font-size: 9px;
             color: var(--text-tertiary);
@@ -829,6 +780,61 @@ def get_html_template(visual_guide=None, default_zoom=4):
         .class-btn.selected .count-badge {{
             background: rgba(0,0,0,0.1);
             color: var(--text-primary);
+        }}
+
+        /* Alternative Selection Panel */
+        .alternative-panel {{
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+        }}
+
+        .alternative-panel.hidden {{
+            display: none;
+        }}
+
+        .alternative-btn {{
+            padding: 10px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+        }}
+
+        .alternative-btn:hover:not(:disabled) {{
+            border-color: var(--pastel-orange);
+            background: var(--pastel-yellow);
+        }}
+
+        .alternative-btn:disabled {{
+            opacity: 0.3;
+            cursor: not-allowed;
+        }}
+
+        .alternative-btn.no-alt {{
+            background: var(--pastel-teal);
+            border-color: var(--pastel-teal);
+        }}
+
+        .alternative-btn.no-alt:hover:not(:disabled) {{
+            background: var(--pastel-green);
+            border-color: var(--pastel-green);
+        }}
+
+        .alternative-btn .key-hint {{
+            font-size: 9px;
+            color: var(--text-tertiary);
+            display: block;
+            margin-top: 2px;
         }}
 
         /* Toast */
@@ -917,7 +923,7 @@ def get_html_template(visual_guide=None, default_zoom=4):
             color: var(--text-primary);
         }}
 
-        .modal-message {{
+        .modal-text {{
             font-size: 14px;
             color: var(--text-secondary);
             margin-bottom: 20px;
@@ -947,7 +953,7 @@ def get_html_template(visual_guide=None, default_zoom=4):
                 max-width: 110px;
             }}
 
-            .right-panel {{
+            .status-panel {{
                 position: static;
                 transform: none;
                 flex-direction: row;
@@ -969,13 +975,15 @@ def get_html_template(visual_guide=None, default_zoom=4):
     <div class="modal-overlay" id="unsaved-modal">
         <div class="modal">
             <div class="modal-title">⚠️ Unsaved Changes</div>
-            <div class="modal-message">
-                You have unsorted images and unsaved progress. Are you sure you want to leave? Your progress will be lost.
+            <div class="modal-text">
+                You have unsorted images remaining. Your progress will be lost if you leave without saving.
+                <br><br>
+                Would you like to save your progress before leaving?
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeUnsavedModal()">Stay</button>
-                <button class="btn btn-success" onclick="saveAndLeave()">Save Progress</button>
-                <button class="btn btn-danger" onclick="confirmLeave()">Leave Anyway</button>
+                <button class="btn btn-secondary" onclick="dismissModal()">Stay</button>
+                <button class="btn btn-danger" onclick="leaveWithoutSaving()">Leave Anyway</button>
+                <button class="btn btn-success" onclick="saveAndLeave()">Save & Leave</button>
             </div>
         </div>
     </div>
@@ -1160,7 +1168,7 @@ def get_html_template(visual_guide=None, default_zoom=4):
 
                     <div class="zoom-controls" id="zoom-controls" style="display: none;">
                         <button class="zoom-btn" onclick="zoomOut()">−</button>
-                        <span class="zoom-label" id="zoom-label">100%</span>
+                        <span class="zoom-label" id="zoom-label">{default_zoom_percent}%</span>
                         <button class="zoom-btn" onclick="zoomIn()">+</button>
                         <button class="zoom-btn" onclick="resetZoom()">↺</button>
                     </div>
@@ -1169,52 +1177,52 @@ def get_html_template(visual_guide=None, default_zoom=4):
                         <span id="filename-display"></span>
                     </div>
 
-                    <!-- Right Panel for Alternative and Status -->
-                    <div class="right-panel hidden" id="right-panel">
-                        <!-- Alternative Panel -->
-                        <div class="alternative-panel hidden" id="alternative-panel">
-                            <button class="alt-btn no-alt" onclick="selectAlternative(false)" id="alt-no">
-                                No Alternative
-                                <div class="alt-hint">Enter</div>
-                            </button>
-                            <button class="alt-btn yes-alt" onclick="selectAlternative(true)" id="alt-yes">
-                                One Alternative
-                                <div class="alt-hint">Shift</div>
-                            </button>
-                        </div>
-
-                        <!-- Status Panel -->
-                        <div class="status-panel hidden" id="status-panel">
-                            <button class="status-btn usable" onclick="finalizeWithStatus('Usable')" id="status-usable">
-                                Usable
-                                <div class="status-hint">Enter</div>
-                            </button>
-                            <button class="status-btn limited" onclick="finalizeWithStatus('Limited')" id="status-limited">
-                                Limited
-                                <div class="status-hint">'</div>
-                            </button>
-                            <button class="status-btn unusable" onclick="finalizeWithStatus('Unusable')" id="status-unusable">
-                                Unusable
-                                <div class="status-hint">Shift</div>
-                            </button>
-                        </div>
+                    <!-- Status Panel -->
+                    <div class="status-panel hidden" id="status-panel">
+                        <button class="status-btn usable" onclick="finalizeWithStatus('Usable')" disabled id="status-usable">
+                            Usable
+                            <div class="status-hint">Enter</div>
+                        </button>
+                        <button class="status-btn limited" onclick="finalizeWithStatus('Limited')" disabled id="status-limited">
+                            Limited
+                            <div class="status-hint">'</div>
+                        </button>
+                        <button class="status-btn unusable" onclick="finalizeWithStatus('Unusable')" disabled id="status-unusable">
+                            Unusable
+                            <div class="status-hint">Shift</div>
+                        </button>
                     </div>
                 </div>
             </div>
 
             <!-- Classification Bar -->
             <div class="classification-bar hidden" id="classification-bar">
+                <!-- Workflow Stage Indicator -->
+                <div class="workflow-stage hidden" id="workflow-stage">
+                    <span class="stage-label" id="stage-label">Select a class</span>
+                </div>
+
                 <!-- Selection Indicator -->
                 <div class="selection-indicator hidden" id="selection-indicator">
                     <span style="color: var(--text-secondary);">Selected:</span>
-                    <span class="selection-tag" id="label-tag"></span>
-                    <span class="selection-tag alternative" id="alt-tag" style="display: none;"></span>
-                    <span class="step-indicator" id="step-indicator"></span>
+                    <span class="selection-tag" id="first-label-tag"></span>
+                    <span class="selection-tag secondary" id="second-label-tag" style="display: none;"></span>
+                    <span class="adjacency-warning" id="adjacency-warning" style="display: none; color: var(--status-unusable-text); font-size: 11px;">⚠️ Non-adjacent</span>
                     <span class="clear-btn" onclick="clearSelection()">Clear</span>
                 </div>
 
+                <!-- Alternative Selection Panel -->
+                <div class="alternative-panel hidden" id="alternative-panel">
+                    <span style="color: var(--text-secondary); font-size: 12px;">Select alternative or:</span>
+                    <div id="adjacent-buttons"></div>
+                    <button class="alternative-btn no-alt" id="no-alternative-btn" onclick="selectAlternative('none')">
+                        No Alternative
+                        <span class="key-hint">Enter</span>
+                    </button>
+                </div>
+
                 <!-- Row 1: Asexual Stages -->
-                <div class="button-row">
+                <div class="button-row" id="row-1">
                     <button class="class-btn" data-key="1" onclick="selectLabel('1')">
                         Early Ring
                         <span class="key-hint">1</span>
@@ -1243,7 +1251,7 @@ def get_html_template(visual_guide=None, default_zoom=4):
                 </div>
 
                 <!-- Row 2: Other Classes -->
-                <div class="button-row">
+                <div class="button-row" id="row-2">
                     <button class="class-btn" data-key="6" onclick="selectLabel('6')">
                         Gametocyte
                         <span class="key-hint">6</span>
@@ -1300,8 +1308,19 @@ def get_html_template(visual_guide=None, default_zoom=4):
             '-': 'Cannot Determine'
         }};
 
+        const FIRST_ROW = ['1', '2', '3', '4', '5'];
+        const SECOND_ROW = ['6', '7', '8', '9', '0', '-'];
         const AUTO_ADVANCE = ['0', '-'];
-        const DEFAULT_ZOOM = {default_zoom};
+
+        const ADJACENCY = {{
+            '1': ['2'],
+            '2': ['1', '3'],
+            '3': ['2', '4'],
+            '4': ['3', '5'],
+            '5': ['4']
+        }};
+
+        const DEFAULT_ZOOM = {DEFAULT_ZOOM};
 
         // =====================================================================
         // STATE
@@ -1314,9 +1333,10 @@ def get_html_template(visual_guide=None, default_zoom=4):
             sortedCounts: {{}},
             totalSorted: 0,
             currentSelection: {{
-                label: null,
-                has_alternative: null,
-                step: 'label'
+                first_label: null,
+                second_label: null,
+                awaiting_alternative: false,
+                awaiting_status: false
             }}
         }};
 
@@ -1325,41 +1345,42 @@ def get_html_template(visual_guide=None, default_zoom=4):
         let pendingLeave = null;
 
         // =====================================================================
-        // UNSAVED CHANGES HANDLING
+        // UNSAVED CHANGES DETECTION
         // =====================================================================
         function hasUnsavedChanges() {{
-            return state.uploadComplete && state.remainingCount > 0 && state.historyCount > 0;
+            return state.uploadComplete && state.remainingCount > 0 && state.totalSorted > 0;
         }}
 
-        function showUnsavedModal(callback) {{
-            pendingLeave = callback;
-            document.getElementById('unsaved-modal').classList.add('visible');
-        }}
-
-        function closeUnsavedModal() {{
-            document.getElementById('unsaved-modal').classList.remove('visible');
-            pendingLeave = null;
-        }}
-
-        function saveAndLeave() {{
-            saveProgress();
-            closeUnsavedModal();
-            if (pendingLeave) pendingLeave();
-        }}
-
-        function confirmLeave() {{
-            closeUnsavedModal();
-            if (pendingLeave) pendingLeave();
-        }}
-
-        // Beforeunload handler
-        window.addEventListener('beforeunload', (e) => {{
+        window.addEventListener('beforeunload', function(e) {{
             if (hasUnsavedChanges()) {{
                 e.preventDefault();
                 e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
                 return e.returnValue;
             }}
         }});
+
+        function showUnsavedModal(callback) {{
+            pendingLeave = callback;
+            document.getElementById('unsaved-modal').classList.add('visible');
+        }}
+
+        function dismissModal() {{
+            document.getElementById('unsaved-modal').classList.remove('visible');
+            pendingLeave = null;
+        }}
+
+        function leaveWithoutSaving() {{
+            document.getElementById('unsaved-modal').classList.remove('visible');
+            if (pendingLeave) {{
+                pendingLeave();
+            }}
+        }}
+
+        function saveAndLeave() {{
+            saveProgress();
+            document.getElementById('unsaved-modal').classList.remove('visible');
+            showToast('Progress saved! You can now leave safely.');
+        }}
 
         // =====================================================================
         // UI HELPERS
@@ -1383,10 +1404,9 @@ def get_html_template(visual_guide=None, default_zoom=4):
         function updateUI() {{
             const uploadComplete = state.uploadComplete;
             const hasImage = state.currentImage !== null;
-            const hasLabel = state.currentSelection.label !== null;
             const hasSorted = state.totalSorted > 0;
             const hasHistory = state.historyCount > 0;
-            const currentStep = state.currentSelection.step;
+            const sel = state.currentSelection;
 
             // Header visibility
             document.getElementById('header-actions').classList.toggle('hidden', !uploadComplete);
@@ -1447,17 +1467,12 @@ def get_html_template(visual_guide=None, default_zoom=4):
             // Classification bar
             document.getElementById('classification-bar').classList.toggle('hidden', !uploadComplete || !hasImage);
             
-            // Right panel visibility
-            const rightPanel = document.getElementById('right-panel');
-            const altPanel = document.getElementById('alternative-panel');
-            const statusPanel = document.getElementById('status-panel');
+            // Status panel - only show when awaiting status
+            document.getElementById('status-panel').classList.toggle('hidden', !uploadComplete || !hasImage || !sel.awaiting_status);
 
-            rightPanel.classList.toggle('hidden', !uploadComplete || !hasImage || !hasLabel);
-            altPanel.classList.toggle('hidden', currentStep !== 'alternative');
-            statusPanel.classList.toggle('hidden', currentStep !== 'status');
-
-            // Update button states
+            // Update button states and workflow
             updateButtonStates();
+            updateWorkflowStage();
         }}
 
         function updateCountBadges() {{
@@ -1473,17 +1488,67 @@ def get_html_template(visual_guide=None, default_zoom=4):
             }}
         }}
 
+        function updateWorkflowStage() {{
+            const sel = state.currentSelection;
+            const stageEl = document.getElementById('workflow-stage');
+            const stageLabel = document.getElementById('stage-label');
+            const altPanel = document.getElementById('alternative-panel');
+
+            if (!state.currentImage) {{
+                stageEl.classList.add('hidden');
+                altPanel.classList.add('hidden');
+                return;
+            }}
+
+            stageEl.classList.remove('hidden');
+
+            if (sel.awaiting_status) {{
+                stageLabel.textContent = 'Step 3: Select image quality (ULU)';
+                altPanel.classList.add('hidden');
+            }} else if (sel.awaiting_alternative) {{
+                stageLabel.textContent = 'Step 2: Select alternative or confirm';
+                altPanel.classList.remove('hidden');
+                updateAlternativeButtons();
+            }} else {{
+                stageLabel.textContent = 'Step 1: Select a class';
+                altPanel.classList.add('hidden');
+            }}
+        }}
+
+        function updateAlternativeButtons() {{
+            const sel = state.currentSelection;
+            const container = document.getElementById('adjacent-buttons');
+            container.innerHTML = '';
+
+            if (!sel.first_label) return;
+
+            // Get all class buttons for selection as alternative
+            const allKeys = [...FIRST_ROW, ...SECOND_ROW].filter(k => k !== sel.first_label && !AUTO_ADVANCE.includes(k));
+            const adjacent = ADJACENCY[sel.first_label] || [];
+
+            allKeys.forEach(key => {{
+                const btn = document.createElement('button');
+                btn.className = 'alternative-btn';
+                if (adjacent.includes(key)) {{
+                    btn.classList.add('adjacent-option');
+                    btn.style.borderColor = 'var(--pastel-orange)';
+                }}
+                btn.innerHTML = `${{CLASS_MAP[key]}}<span class="key-hint">${{key}}</span>`;
+                btn.onclick = () => selectAlternative(key);
+                container.appendChild(btn);
+            }});
+        }}
+
         function updateButtonStates() {{
-            const label = state.currentSelection.label;
-            const hasAlternative = state.currentSelection.has_alternative;
-            const currentStep = state.currentSelection.step;
-            const hasLabel = label !== null;
+            const sel = state.currentSelection;
+            const firstLabel = sel.first_label;
+            const secondLabel = sel.second_label;
 
             // Update all class buttons
             document.querySelectorAll('.class-btn').forEach(btn => {{
                 const key = btn.dataset.key;
                 
-                btn.classList.remove('selected');
+                btn.classList.remove('selected', 'adjacent');
                 btn.disabled = false;
 
                 if (!state.currentImage) {{
@@ -1491,40 +1556,52 @@ def get_html_template(visual_guide=None, default_zoom=4):
                     return;
                 }}
 
-                if (label === key) {{
-                    btn.classList.add('selected');
+                // If awaiting alternative or status, disable class buttons
+                if (sel.awaiting_alternative || sel.awaiting_status) {{
+                    btn.disabled = true;
+                    if (firstLabel === key) {{
+                        btn.classList.add('selected');
+                    }}
+                    return;
                 }}
 
-                // Disable all buttons if we've moved past label selection
-                if (hasLabel && currentStep !== 'label') {{
-                    btn.disabled = true;
+                if (firstLabel === key) {{
+                    btn.classList.add('selected');
                 }}
+            }});
+
+            // Update status buttons - only enabled when awaiting status
+            const statusBtns = ['status-usable', 'status-limited', 'status-unusable'];
+            statusBtns.forEach(id => {{
+                document.getElementById(id).disabled = !sel.awaiting_status;
             }});
 
             // Update selection indicator
             const indicator = document.getElementById('selection-indicator');
-            const labelTag = document.getElementById('label-tag');
-            const altTag = document.getElementById('alt-tag');
-            const stepIndicator = document.getElementById('step-indicator');
+            const firstTag = document.getElementById('first-label-tag');
+            const secondTag = document.getElementById('second-label-tag');
+            const adjacencyWarning = document.getElementById('adjacency-warning');
 
-            if (hasLabel) {{
+            if (firstLabel) {{
                 indicator.classList.remove('hidden');
-                labelTag.textContent = CLASS_MAP[label];
+                firstTag.textContent = CLASS_MAP[firstLabel];
                 
-                if (hasAlternative !== null) {{
-                    altTag.textContent = hasAlternative ? 'Has Alternative' : 'No Alternative';
-                    altTag.style.display = 'inline-flex';
+                if (secondLabel) {{
+                    secondTag.textContent = CLASS_MAP[secondLabel];
+                    secondTag.style.display = 'inline-flex';
+                    
+                    // Check if adjacent
+                    const adjacent = ADJACENCY[firstLabel] || [];
+                    if (!adjacent.includes(secondLabel)) {{
+                        secondTag.classList.add('non-adjacent');
+                        adjacencyWarning.style.display = 'inline';
+                    }} else {{
+                        secondTag.classList.remove('non-adjacent');
+                        adjacencyWarning.style.display = 'none';
+                    }}
                 }} else {{
-                    altTag.style.display = 'none';
-                }}
-
-                // Show step indicator
-                if (currentStep === 'alternative') {{
-                    stepIndicator.textContent = '→ Select Alternative';
-                }} else if (currentStep === 'status') {{
-                    stepIndicator.textContent = '→ Select Status';
-                }} else {{
-                    stepIndicator.textContent = '';
+                    secondTag.style.display = 'none';
+                    adjacencyWarning.style.display = 'none';
                 }}
             }} else {{
                 indicator.classList.add('hidden');
@@ -1535,7 +1612,7 @@ def get_html_template(visual_guide=None, default_zoom=4):
         // ZOOM
         // =====================================================================
         function setZoom(newZoom) {{
-            zoom = Math.max(0.25, Math.min(8, newZoom));
+            zoom = Math.max(0.25, Math.min(4, newZoom));
             const img = document.getElementById('current-image');
             if (img) {{
                 img.style.transform = `scale(${{zoom}})`;
@@ -1619,10 +1696,13 @@ def get_html_template(visual_guide=None, default_zoom=4):
                 state.historyCount = data.history_count;
                 state.sortedCounts = data.sorted_counts;
                 state.totalSorted = data.total_sorted;
-                state.currentSelection = data.current_selection || {{ label: null, has_alternative: null, step: 'label' }};
+                state.currentSelection = data.current_selection || {{ 
+                    first_label: null, 
+                    second_label: null,
+                    awaiting_alternative: false,
+                    awaiting_status: false
+                }};
                 
-                // Set initial zoom
-                setZoom(DEFAULT_ZOOM);
                 updateUI();
             }} catch (e) {{
                 console.error('Failed to fetch state:', e);
@@ -1631,7 +1711,14 @@ def get_html_template(visual_guide=None, default_zoom=4):
 
         async function selectLabel(key) {{
             if (!state.currentImage) return;
-            if (state.currentSelection.step !== 'label') return;
+            
+            const sel = state.currentSelection;
+            
+            // Don't allow if already in alternative or status selection
+            if (sel.awaiting_alternative || sel.awaiting_status) {{
+                showToast('Complete current selection first', true);
+                return;
+            }}
 
             try {{
                 const res = await fetch('/select_label', {{
@@ -1643,7 +1730,7 @@ def get_html_template(visual_guide=None, default_zoom=4):
                 const data = await res.json();
 
                 if (data.success) {{
-                    // Check if auto-advanced
+                    // Check if auto-advanced (Uninfected/Cannot Determine)
                     if (data.auto_advanced) {{
                         showToast(data.message);
                         state.currentImage = data.current_image;
@@ -1652,7 +1739,7 @@ def get_html_template(visual_guide=None, default_zoom=4):
                         state.sortedCounts = data.sorted_counts;
                         state.totalSorted = data.total_sorted;
                         state.currentSelection = data.current_selection;
-                        setZoom(DEFAULT_ZOOM);
+                        resetZoom();
                         updateUI();
                     }} else {{
                         state.currentSelection = data.selection;
@@ -1666,14 +1753,12 @@ def get_html_template(visual_guide=None, default_zoom=4):
             }}
         }}
 
-        async function selectAlternative(hasAlternative) {{
-            if (state.currentSelection.step !== 'alternative') return;
-
+        async function selectAlternative(key) {{
             try {{
                 const res = await fetch('/select_alternative', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ has_alternative: hasAlternative }})
+                    body: JSON.stringify({{ key }})
                 }});
 
                 const data = await res.json();
@@ -1704,7 +1789,10 @@ def get_html_template(visual_guide=None, default_zoom=4):
         }}
 
         async function finalizeWithStatus(status) {{
-            if (state.currentSelection.step !== 'status') return;
+            if (!state.currentSelection.awaiting_status) {{
+                showToast('Select alternative first', true);
+                return;
+            }}
 
             try {{
                 const res = await fetch('/finalize', {{
@@ -1724,7 +1812,7 @@ def get_html_template(visual_guide=None, default_zoom=4):
                     state.totalSorted = data.total_sorted;
                     state.currentSelection = data.current_selection;
                     
-                    setZoom(DEFAULT_ZOOM);
+                    resetZoom();
                     updateUI();
                 }} else {{
                     showToast(data.message, true);
@@ -1864,51 +1952,55 @@ def get_html_template(visual_guide=None, default_zoom=4):
         // KEYBOARD SHORTCUTS
         // =====================================================================
         document.addEventListener('keydown', (e) => {{
-            // Ignore if typing in an input or modal is open
+            // Ignore if typing in an input
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            // Ignore if modal is open
             if (document.getElementById('unsaved-modal').classList.contains('visible')) return;
 
             const key = e.key;
-            const currentStep = state.currentSelection.step;
+            const sel = state.currentSelection;
 
-            // Number keys 0-9 and minus for classification (only in label step)
-            if (currentStep === 'label' && (/^[0-9]$/.test(key) || key === '-')) {{
+            // Number keys 0-9 and minus for classification
+            if (/^[0-9]$/.test(key) || key === '-') {{
                 e.preventDefault();
-                selectLabel(key);
+                
+                // If awaiting alternative, treat as alternative selection
+                if (sel.awaiting_alternative && key !== sel.first_label && !AUTO_ADVANCE.includes(key)) {{
+                    selectAlternative(key);
+                }} else if (!sel.awaiting_alternative && !sel.awaiting_status) {{
+                    selectLabel(key);
+                }}
                 return;
             }}
 
-            // Alternative step shortcuts
-            if (currentStep === 'alternative') {{
-                if (key === 'Enter') {{
-                    e.preventDefault();
-                    selectAlternative(false);  // No Alternative
-                    return;
+            // Enter key
+            if (key === 'Enter') {{
+                e.preventDefault();
+                if (sel.awaiting_status) {{
+                    finalizeWithStatus('Usable');
+                }} else if (sel.awaiting_alternative) {{
+                    selectAlternative('none');
                 }}
-                if (key === 'Shift') {{
-                    e.preventDefault();
-                    selectAlternative(true);   // One Alternative
-                    return;
-                }}
+                return;
             }}
 
-            // Status step shortcuts
-            if (currentStep === 'status') {{
-                if (key === 'Enter') {{
-                    e.preventDefault();
-                    finalizeWithStatus('Usable');
-                    return;
-                }}
-                if (key === "'") {{
-                    e.preventDefault();
+            // Apostrophe for Limited
+            if (key === "'") {{
+                e.preventDefault();
+                if (sel.awaiting_status) {{
                     finalizeWithStatus('Limited');
-                    return;
                 }}
-                if (key === 'Shift') {{
-                    e.preventDefault();
+                return;
+            }}
+
+            // Shift for Unusable
+            if (key === 'Shift') {{
+                e.preventDefault();
+                if (sel.awaiting_status) {{
                     finalizeWithStatus('Unusable');
-                    return;
                 }}
+                return;
             }}
 
             // Undo
@@ -1954,7 +2046,10 @@ def get_html_template(visual_guide=None, default_zoom=4):
         // =====================================================================
         // INIT
         // =====================================================================
-        window.onload = fetchState;
+        window.onload = function() {{
+            fetchState();
+            setZoom(DEFAULT_ZOOM);
+        }};
     </script>
 </body>
 </html>

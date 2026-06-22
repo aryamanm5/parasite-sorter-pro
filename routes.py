@@ -2,7 +2,7 @@ import os
 import io
 from flask import jsonify, request, send_file
 
-from config import CLASS_MAPPING, AUTO_ADVANCE_CLASSES, TOP_VISUAL_GUIDE_FILE, DEFAULT_ZOOM
+from config import CLASS_MAPPING, FIRST_ROW_CLASSES, SECOND_ROW_CLASSES, ADJACENCY_MAP, AUTO_ADVANCE_CLASSES, TOP_VISUAL_GUIDE_FILE
 from session_manager import (
     get_session_data, 
     cleanup_old_sessions, 
@@ -16,7 +16,8 @@ from file_handler import (
     undo_classification,
     create_download_zip,
     create_progress_csv,
-    load_progress_csv
+    load_progress_csv,
+    is_adjacent
 )
 
 
@@ -29,7 +30,7 @@ def register_routes(app):
         cleanup_old_sessions()
         get_session_data()  # Initialize session
         visual_guide = get_visual_guide_info()
-        return get_html_template(visual_guide, DEFAULT_ZOOM)
+        return get_html_template(visual_guide)
 
     @app.route('/visual_guide')
     def visual_guide():
@@ -92,8 +93,7 @@ def register_routes(app):
             'history_count': len(session_data['history']),
             'sorted_counts': sorted_counts,
             'total_sorted': total_sorted,
-            'current_selection': session_data['current_selection'],
-            'default_zoom': DEFAULT_ZOOM
+            'current_selection': session_data['current_selection']
         })
 
     @app.route('/serve_image/<path:filename>')
@@ -103,7 +103,7 @@ def register_routes(app):
 
     @app.route('/select_label', methods=['POST'])
     def select_label():
-        """Handle label selection (step 1)."""
+        """Handle initial label selection (single label only)."""
         session_data = get_session_data()
         data = request.get_json()
         key = data.get('key')
@@ -120,10 +120,14 @@ def register_routes(app):
 
         current = session_data['current_selection']
 
-        # Check if this is an auto-advance class
+        # Don't allow selection if already waiting for alternative or status
+        if current['awaiting_alternative'] or current['awaiting_status']:
+            return jsonify({'success': False, 'message': 'Complete current selection first'}), 400
+
+        # Check if this is an auto-advance class (Uninfected, Cannot Determine)
         if key in AUTO_ADVANCE_CLASSES:
-            # Auto-classify as Usable with no alternative, skip both steps
-            success, message = classify_image(session_data, key, None, 'Usable')
+            # Auto-classify as Usable and move to next
+            success, message = classify_image(session_data, key, None, 'Usable', True)
             
             if success:
                 reset_current_selection(session_data)
@@ -145,38 +149,58 @@ def register_routes(app):
             else:
                 return jsonify({'success': False, 'message': message}), 500
 
-        # Set label and move to alternative step
-        current['label'] = key
-        current['step'] = 'alternative'
+        # Set first label and move to awaiting_alternative state
+        current['first_label'] = key
+        current['second_label'] = None
+        current['awaiting_alternative'] = True
+        current['awaiting_status'] = False
+
+        # Determine adjacent options
+        adjacent = ADJACENCY_MAP.get(key, [])
 
         return jsonify({
             'success': True,
             'selection': current,
-            'step': 'alternative'
+            'adjacent_options': adjacent,
+            'show_no_alternative': True
         })
 
     @app.route('/select_alternative', methods=['POST'])
     def select_alternative():
-        """Handle alternative selection (step 2)."""
+        """Handle alternative label selection or 'No Alternative'."""
         session_data = get_session_data()
         data = request.get_json()
-        has_alternative = data.get('has_alternative')
+        alternative_key = data.get('key')  # Can be a class key or 'none'
 
         current = session_data['current_selection']
 
-        if current['label'] is None:
-            return jsonify({'success': False, 'message': 'No label selected'}), 400
+        if not current['awaiting_alternative']:
+            return jsonify({'success': False, 'message': 'Not awaiting alternative selection'}), 400
 
-        if current['step'] != 'alternative':
-            return jsonify({'success': False, 'message': 'Invalid step'}), 400
+        first_key = current['first_label']
+        
+        if alternative_key == 'none':
+            # No alternative selected
+            current['second_label'] = None
+            is_adjacent_selection = True
+        else:
+            # Check if valid alternative
+            if alternative_key not in CLASS_MAPPING:
+                return jsonify({'success': False, 'message': 'Invalid alternative key'}), 400
+            
+            current['second_label'] = alternative_key
+            # Check adjacency for CSV flag
+            is_adjacent_selection = is_adjacent(first_key, alternative_key)
 
-        current['has_alternative'] = has_alternative
-        current['step'] = 'status'
+        # Move to status selection
+        current['awaiting_alternative'] = False
+        current['awaiting_status'] = True
 
         return jsonify({
             'success': True,
             'selection': current,
-            'step': 'status'
+            'is_adjacent': is_adjacent_selection,
+            'show_status_buttons': True
         })
 
     @app.route('/clear_selection', methods=['POST'])
@@ -192,7 +216,7 @@ def register_routes(app):
 
     @app.route('/finalize', methods=['POST'])
     def finalize():
-        """Finalize classification with status (step 3)."""
+        """Finalize classification with status."""
         session_data = get_session_data()
         data = request.get_json()
         status = data.get('status')
@@ -202,17 +226,23 @@ def register_routes(app):
 
         current = session_data['current_selection']
         
-        if current['label'] is None:
+        if current['first_label'] is None:
             return jsonify({'success': False, 'message': 'No label selected'}), 400
 
-        if current['step'] != 'status':
-            return jsonify({'success': False, 'message': 'Complete alternative selection first'}), 400
+        if not current['awaiting_status']:
+            return jsonify({'success': False, 'message': 'Not ready for status selection'}), 400
+
+        # Check adjacency for CSV
+        is_adjacent_selection = True
+        if current['second_label']:
+            is_adjacent_selection = is_adjacent(current['first_label'], current['second_label'])
 
         success, message = classify_image(
             session_data,
-            current['label'],
-            current['has_alternative'],
-            status
+            current['first_label'],
+            current['second_label'],
+            status,
+            is_adjacent_selection
         )
 
         if success:

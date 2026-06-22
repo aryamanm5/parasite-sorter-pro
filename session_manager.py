@@ -42,9 +42,10 @@ def get_session_data():
                 'history': [],
                 'upload_complete': False,
                 'current_selection': {
-                    'label': None,
-                    'has_alternative': None,
-                    'step': 'label'  # 'label', 'alternative', 'status'
+                    'first_label': None,
+                    'second_label': None,
+                    'awaiting_alternative': False,  # New: waiting for alternative selection
+                    'awaiting_status': False  # New: waiting for ULU selection
                 }
             }
 
@@ -83,9 +84,10 @@ def cleanup_old_sessions():
 def reset_current_selection(session_data):
     """Reset the current image selection state."""
     session_data['current_selection'] = {
-        'label': None,
-        'has_alternative': None,
-        'step': 'label'
+        'first_label': None,
+        'second_label': None,
+        'awaiting_alternative': False,
+        'awaiting_status': False
     }
 
 
