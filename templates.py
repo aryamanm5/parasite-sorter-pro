@@ -305,25 +305,27 @@ def get_html_template(visual_guide=None):
         .sidebar-content {{
             flex: 1;
             overflow-y: auto;
-            padding: 16px;
+            padding: 12px;
         }}
 
         .sidebar-section {{
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }}
 
         .sidebar-title {{
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-tertiary);
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }}
 
         /* Guide styles */
         .guide-image {{
             width: 100%;
+            max-height: 200px;
+            object-fit: contain;
             border-radius: var(--radius-md);
             cursor: zoom-in;
             border: 1px solid var(--border-light);
@@ -349,7 +351,7 @@ def get_html_template(visual_guide=None):
         .cue-table {{
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 10px;
             background: var(--bg-secondary);
             border-radius: var(--radius-sm);
             overflow: hidden;
@@ -359,7 +361,7 @@ def get_html_template(visual_guide=None):
         .cue-table th {{
             background: var(--bg-tertiary);
             color: var(--text-primary);
-            padding: 8px 6px;
+            padding: 5px 4px;
             font-weight: 600;
             text-align: center;
             border-bottom: 1px solid var(--border-light);
@@ -370,7 +372,7 @@ def get_html_template(visual_guide=None):
         }}
 
         .cue-table td {{
-            padding: 6px;
+            padding: 4px;
             border-bottom: 1px solid var(--border-light);
             color: var(--text-primary);
         }}
@@ -391,14 +393,14 @@ def get_html_template(visual_guide=None):
         /* Decision Flow */
         .decision-flow {{
             margin: 0;
-            padding-left: 18px;
-            font-size: 12px;
-            line-height: 1.5;
+            padding-left: 16px;
+            font-size: 11px;
+            line-height: 1.35;
             color: var(--text-secondary);
         }}
 
         .decision-flow li {{
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }}
 
         .decision-flow b {{
@@ -441,7 +443,9 @@ def get_html_template(visual_guide=None):
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bg-secondary);
+            /* Canvas colour, not a white slab — the leftover area around a
+               zoomed-down image now blends with the app instead of glaring white. */
+            background: var(--bg-primary);
             border-radius: var(--radius-lg);
             border: 1px solid var(--border-light);
             overflow: hidden;
@@ -450,21 +454,30 @@ def get_html_template(visual_guide=None):
         }}
 
         .image-container {{
+            /* White card fills the viewer. Image fits inside via object-fit;
+               zoom scales the image within this fixed frame. */
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: auto;
-            padding: 20px;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
         }}
 
         #current-image {{
+            /* Fits the card, aspect-correct; zoom transform sizes it up/down. */
             max-width: 100%;
             max-height: 100%;
+            width: auto;
+            height: auto;
             object-fit: contain;
             border-radius: var(--radius-sm);
-            box-shadow: var(--shadow-md);
+            transform: scale(1);
+            transform-origin: center center;
             transition: transform 0.15s ease;
         }}
 
@@ -611,10 +624,14 @@ def get_html_template(visual_guide=None):
         }}
 
         .status-hint {{
-            font-size: 9px;
-            font-weight: 500;
-            opacity: 0.7;
-            margin-top: 2px;
+            font-size: 10px;
+            font-weight: 700;
+            opacity: 0.85;
+            margin-top: 3px;
+            background: rgba(0,0,0,0.08);
+            padding: 1px 6px;
+            border-radius: 6px;
+            display: inline-block;
         }}
 
         /* Classification Bar */
@@ -749,27 +766,34 @@ def get_html_template(visual_guide=None):
         }}
 
         .class-btn .key-hint {{
-            font-size: 9px;
-            color: var(--text-tertiary);
-            font-weight: 500;
-            background: var(--bg-tertiary);
-            padding: 1px 5px;
-            border-radius: 3px;
+            order: -1;              /* sit above the label, never overlap it */
+            font-size: 13px;
+            color: #fff;
+            font-weight: 800;
+            background: var(--accent-hover);
+            min-width: 24px;
+            height: 22px;
+            padding: 0 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
         }}
 
         .class-btn.selected .key-hint {{
-            background: rgba(0,0,0,0.1);
-            color: var(--text-primary);
+            background: var(--text-primary);
+            color: #fff;
         }}
 
         .class-btn .count-badge {{
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--text-tertiary);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
             background: var(--bg-tertiary);
-            padding: 2px 6px;
+            padding: 2px 8px;
             border-radius: 8px;
-            min-width: 20px;
+            min-width: 22px;
         }}
 
         .class-btn .count-badge.has-items {{
@@ -1015,6 +1039,12 @@ def get_html_template(visual_guide=None):
             <button class="btn btn-secondary" id="undo-btn" disabled onclick="executeUndo()">
                 ↩ Undo
             </button>
+            <button class="btn btn-secondary" id="redo-btn" disabled onclick="executeRedo()">
+                ↪ Redo
+            </button>
+            <button class="btn btn-secondary" id="flag-btn" disabled onclick="flagImage()" title="Flag &amp; skip (F)">
+                🚩 Flag
+            </button>
             <button class="btn btn-secondary" id="save-btn" disabled onclick="saveProgress()">
                 💾 Save
             </button>
@@ -1181,15 +1211,15 @@ def get_html_template(visual_guide=None):
                     <div class="status-panel hidden" id="status-panel">
                         <button class="status-btn usable" onclick="finalizeWithStatus('Usable')" disabled id="status-usable">
                             Usable
-                            <div class="status-hint">Enter</div>
+                            <div class="status-hint">1 · Enter</div>
                         </button>
                         <button class="status-btn limited" onclick="finalizeWithStatus('Limited')" disabled id="status-limited">
                             Limited
-                            <div class="status-hint">'</div>
+                            <div class="status-hint">2 · '</div>
                         </button>
                         <button class="status-btn unusable" onclick="finalizeWithStatus('Unusable')" disabled id="status-unusable">
                             Unusable
-                            <div class="status-hint">Shift</div>
+                            <div class="status-hint">3 · Shift</div>
                         </button>
                     </div>
                 </div>
@@ -1217,7 +1247,7 @@ def get_html_template(visual_guide=None):
                     <div id="adjacent-buttons"></div>
                     <button class="alternative-btn no-alt" id="no-alternative-btn" onclick="selectAlternative('none')">
                         No Alternative
-                        <span class="key-hint">Enter</span>
+                        <span class="key-hint">Enter · same key</span>
                     </button>
                 </div>
 
@@ -1310,7 +1340,8 @@ def get_html_template(visual_guide=None):
 
         const FIRST_ROW = ['1', '2', '3', '4', '5'];
         const SECOND_ROW = ['6', '7', '8', '9', '0', '-'];
-        const AUTO_ADVANCE = ['0', '-'];
+        const AUTO_ADVANCE = ['0'];              // Uninfected: instant Usable
+        const NON_ALTERNATIVE = ['0', '-'];      // never offered as an alternative label
 
         const ADJACENCY = {{
             '1': ['2'],
@@ -1330,6 +1361,7 @@ def get_html_template(visual_guide=None):
             currentImage: null,
             remainingCount: 0,
             historyCount: 0,
+            redoCount: 0,
             sortedCounts: {{}},
             totalSorted: 0,
             currentSelection: {{
@@ -1414,6 +1446,8 @@ def get_html_template(visual_guide=None):
             
             // Button states
             document.getElementById('undo-btn').disabled = !hasHistory;
+            document.getElementById('redo-btn').disabled = !(state.redoCount > 0);
+            document.getElementById('flag-btn').disabled = !(uploadComplete && hasImage);
             document.getElementById('save-btn').disabled = !hasSorted;
             document.getElementById('load-btn').disabled = !uploadComplete;
             document.getElementById('download-btn').disabled = !hasSorted;
@@ -1449,7 +1483,10 @@ def get_html_template(visual_guide=None):
                 
                 const img = document.getElementById('current-image');
                 img.src = `/serve_image/${{encodeURIComponent(state.currentImage)}}?t=${{Date.now()}}`;
-                document.getElementById('filename-display').textContent = state.currentImage;
+                // Show the real name, not the internal ~flag~ alias.
+                const shown = state.currentImage.replace(/^~flag~\\d+~/, '');
+                document.getElementById('filename-display').textContent =
+                    shown === state.currentImage ? shown : '🚩 ' + shown;
             }} else {{
                 placeholder.innerHTML = `
                     <div class="placeholder-icon">🎉</div>
@@ -1523,7 +1560,7 @@ def get_html_template(visual_guide=None):
             if (!sel.first_label) return;
 
             // Get all class buttons for selection as alternative
-            const allKeys = [...FIRST_ROW, ...SECOND_ROW].filter(k => k !== sel.first_label && !AUTO_ADVANCE.includes(k));
+            const allKeys = [...FIRST_ROW, ...SECOND_ROW].filter(k => k !== sel.first_label && !NON_ALTERNATIVE.includes(k));
             const adjacent = ADJACENCY[sel.first_label] || [];
 
             allKeys.forEach(key => {{
@@ -1613,6 +1650,7 @@ def get_html_template(visual_guide=None):
         // =====================================================================
         function setZoom(newZoom) {{
             zoom = Math.max(0.25, Math.min(4, newZoom));
+            // Scale the image within the fixed white card.
             const img = document.getElementById('current-image');
             if (img) {{
                 img.style.transform = `scale(${{zoom}})`;
@@ -1685,24 +1723,34 @@ def get_html_template(visual_guide=None):
         // =====================================================================
         // API CALLS
         // =====================================================================
+        function applyState(data) {{
+            state.currentImage = data.current_image;
+            state.remainingCount = data.remaining_count;
+            state.historyCount = data.history_count;
+            state.redoCount = data.redo_count || 0;
+            state.sortedCounts = data.sorted_counts;
+            state.totalSorted = data.total_sorted;
+            if (data.current_selection !== undefined) {{
+                state.currentSelection = data.current_selection;
+            }}
+        }}
+
         async function fetchState() {{
             try {{
                 const res = await fetch('/state');
                 const data = await res.json();
-                
+
                 state.uploadComplete = data.upload_complete;
-                state.currentImage = data.current_image;
-                state.remainingCount = data.remaining_count;
-                state.historyCount = data.history_count;
-                state.sortedCounts = data.sorted_counts;
-                state.totalSorted = data.total_sorted;
-                state.currentSelection = data.current_selection || {{ 
-                    first_label: null, 
-                    second_label: null,
-                    awaiting_alternative: false,
-                    awaiting_status: false
-                }};
-                
+                applyState(data);
+                if (data.current_selection === undefined) {{
+                    state.currentSelection = {{
+                        first_label: null,
+                        second_label: null,
+                        awaiting_alternative: false,
+                        awaiting_status: false
+                    }};
+                }}
+
                 updateUI();
             }} catch (e) {{
                 console.error('Failed to fetch state:', e);
@@ -1730,16 +1778,10 @@ def get_html_template(visual_guide=None):
                 const data = await res.json();
 
                 if (data.success) {{
-                    // Check if auto-advanced (Uninfected/Cannot Determine)
+                    // Check if auto-advanced (Uninfected)
                     if (data.auto_advanced) {{
                         showToast(data.message);
-                        state.currentImage = data.current_image;
-                        state.remainingCount = data.remaining_count;
-                        state.historyCount = data.history_count;
-                        state.sortedCounts = data.sorted_counts;
-                        state.totalSorted = data.total_sorted;
-                        state.currentSelection = data.current_selection;
-                        resetZoom();
+                        applyState(data);
                         updateUI();
                     }} else {{
                         state.currentSelection = data.selection;
@@ -1805,14 +1847,7 @@ def get_html_template(visual_guide=None):
 
                 if (data.success) {{
                     showToast(data.message);
-                    state.currentImage = data.current_image;
-                    state.remainingCount = data.remaining_count;
-                    state.historyCount = data.history_count;
-                    state.sortedCounts = data.sorted_counts;
-                    state.totalSorted = data.total_sorted;
-                    state.currentSelection = data.current_selection;
-                    
-                    resetZoom();
+                    applyState(data);
                     updateUI();
                 }} else {{
                     showToast(data.message, true);
@@ -1829,13 +1864,7 @@ def get_html_template(visual_guide=None):
 
                 if (data.success) {{
                     showToast('Undo successful');
-                    state.currentImage = data.current_image;
-                    state.remainingCount = data.remaining_count;
-                    state.historyCount = data.history_count;
-                    state.sortedCounts = data.sorted_counts;
-                    state.totalSorted = data.total_sorted;
-                    state.currentSelection = data.current_selection;
-                    
+                    applyState(data);
                     updateUI();
                 }} else {{
                     showToast(data.message, true);
@@ -1845,15 +1874,83 @@ def get_html_template(visual_guide=None):
             }}
         }}
 
+        async function executeRedo() {{
+            try {{
+                const res = await fetch('/redo', {{ method: 'POST' }});
+                const data = await res.json();
+
+                if (data.success) {{
+                    showToast('Redo successful');
+                    applyState(data);
+                    updateUI();
+                }} else {{
+                    showToast(data.message, true);
+                }}
+            }} catch (e) {{
+                showToast('Error redoing', true);
+            }}
+        }}
+
+        async function flagImage() {{
+            if (!state.currentImage) return;
+            try {{
+                const res = await fetch('/flag', {{ method: 'POST' }});
+                const data = await res.json();
+
+                if (data.success) {{
+                    showToast(data.message);
+                    applyState(data);
+                    updateUI();
+                }} else {{
+                    showToast(data.message, true);
+                }}
+            }} catch (e) {{
+                showToast('Error flagging', true);
+            }}
+        }}
+
+        // Backspace steps back through the current selection before touching the
+        // previous image: alternative/status -> class -> (nothing) -> undo.
+        async function stepBack() {{
+            const sel = state.currentSelection;
+            if (!sel.first_label && !sel.awaiting_alternative && !sel.awaiting_status) {{
+                executeUndo();
+                return;
+            }}
+            try {{
+                const res = await fetch('/step_back', {{ method: 'POST' }});
+                const data = await res.json();
+                if (data.success && data.stepped) {{
+                    state.currentSelection = data.current_selection;
+                    updateUI();
+                }} else {{
+                    executeUndo();
+                }}
+            }} catch (e) {{
+                showToast('Error going back', true);
+            }}
+        }}
+
+        // Download via an <a download> click, not location.href, so the browser
+        // treats it as a file download and never fires the beforeunload prompt.
+        function triggerDownload(url) {{
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }}
+
         function downloadSorted() {{
             if (state.totalSorted > 0) {{
-                window.location.href = '/download';
+                triggerDownload('/download');
             }}
         }}
 
         function saveProgress() {{
             if (state.totalSorted > 0) {{
-                window.location.href = '/save_progress';
+                triggerDownload('/save_progress');
             }}
         }}
 
@@ -1932,11 +2029,7 @@ def get_html_template(visual_guide=None):
 
                 if (data.success) {{
                     showToast(data.message);
-                    state.currentImage = data.current_image;
-                    state.remainingCount = data.remaining_count;
-                    state.historyCount = data.history_count;
-                    state.sortedCounts = data.sorted_counts;
-                    state.totalSorted = data.total_sorted;
+                    applyState(data);
                     updateUI();
                 }} else {{
                     showToast(data.message, true);
@@ -1964,11 +2057,21 @@ def get_html_template(visual_guide=None):
             // Number keys 0-9 and minus for classification
             if (/^[0-9]$/.test(key) || key === '-') {{
                 e.preventDefault();
-                
-                // If awaiting alternative, treat as alternative selection
-                if (sel.awaiting_alternative && key !== sel.first_label && !AUTO_ADVANCE.includes(key)) {{
-                    selectAlternative(key);
-                }} else if (!sel.awaiting_alternative && !sel.awaiting_status) {{
+
+                // During status selection, 1/2/3 = Usable/Limited/Unusable.
+                if (sel.awaiting_status) {{
+                    if (key === '1') finalizeWithStatus('Usable');
+                    else if (key === '2') finalizeWithStatus('Limited');
+                    else if (key === '3') finalizeWithStatus('Unusable');
+                    return;
+                }}
+
+                // If awaiting alternative: pressing the first label's own key again
+                // means "No Alternative"; any other class key is the alternative.
+                if (sel.awaiting_alternative) {{
+                    if (key === sel.first_label) selectAlternative('none');
+                    else if (!NON_ALTERNATIVE.includes(key)) selectAlternative(key);
+                }} else {{
                     selectLabel(key);
                 }}
                 return;
@@ -2003,10 +2106,24 @@ def get_html_template(visual_guide=None):
                 return;
             }}
 
-            // Undo
+            // Step back: undo the last selection step, or the last image if none.
             if (key === 'z' || key === 'Z' || key === 'Backspace') {{
                 e.preventDefault();
-                executeUndo();
+                stepBack();
+                return;
+            }}
+
+            // Redo
+            if (key === 'y' || key === 'Y') {{
+                e.preventDefault();
+                executeRedo();
+                return;
+            }}
+
+            // Flag current image and skip to the back of the set
+            if (key === 'f' || key === 'F') {{
+                e.preventDefault();
+                flagImage();
                 return;
             }}
 

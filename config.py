@@ -19,8 +19,9 @@ SESSION_TIMEOUT_HOURS = 2
 # Visual guide file - set this to your guide image/pdf filename
 TOP_VISUAL_GUIDE_FILE = "visual_guide.png"
 
-# Default zoom level (2.5 = 250%)
-DEFAULT_ZOOM = 2.5
+# Default zoom level. The image fills the viewer at 1.0 (fit-to-display); this is a
+# multiplier on top of that. Tune this knob to taste — lower = smaller start.
+DEFAULT_ZOOM = 2
 
 # Class mapping - keys are keyboard inputs, values are class names
 CLASS_MAPPING = {
@@ -37,14 +38,11 @@ CLASS_MAPPING = {
     '-': 'Cannot Determine'
 }
 
-# First row classes (ordered asexual stages)
-FIRST_ROW_CLASSES = ['1', '2', '3', '4', '5']
-
-# Second row classes - single label only
-SECOND_ROW_CLASSES = ['6', '7', '8', '9', '0', '-']
-
 # Auto-advance classes - these skip alternative and status selection, auto-classify as "Usable"
-AUTO_ADVANCE_CLASSES = ['0', '-']  # Uninfected, Cannot Determine
+AUTO_ADVANCE_CLASSES = ['0']  # Uninfected
+
+# No-alternative classes - skip the alternative step but still prompt for Usable/Limited/Unusable
+NO_ALTERNATIVE_CLASSES = ['-']  # Cannot Determine
 
 # Adjacency mapping for first row (which keys can be selected as alternative)
 ADJACENCY_MAP = {
@@ -53,13 +51,6 @@ ADJACENCY_MAP = {
     '3': ['2', '4'],      # Late Ring -> Middle Ring, Trophozoite
     '4': ['3', '5'],      # Trophozoite -> Late Ring, Schizont
     '5': ['4']            # Schizont -> Trophozoite
-}
-
-# Status options
-STATUS_OPTIONS = {
-    'Enter': 'Usable',
-    "'": 'Limited',
-    'Shift': 'Unusable'
 }
 
 # Subfolders for each class

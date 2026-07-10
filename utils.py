@@ -32,9 +32,12 @@ def get_sorted_counts(sorted_dir):
         }
         
         class_dir = os.path.join(sorted_dir, class_name)
-        
+
         if os.path.exists(class_dir):
-            for status in STATUS_SUBFOLDERS:
+            # Only count the real statuses. Second_Choice holds duplicate copies of
+            # images already counted under their primary label, so including it here
+            # double-counts and makes "done" outrun "left". ponytail: real statuses only.
+            for status in ('Usable', 'Limited', 'Unusable'):
                 status_dir = os.path.join(class_dir, status)
                 if os.path.exists(status_dir):
                     count = len(get_images_list(status_dir))
@@ -62,33 +65,6 @@ def get_unique_filename(directory, filename):
         counter += 1
     
     return f"{base}_{counter}{ext}"
-
-
-def get_progress_rows(sorted_dir):
-    """Get all sorted images as rows for CSV export."""
-    rows = []
-
-    for class_key, class_name in CLASS_MAPPING.items():
-        class_dir = os.path.join(sorted_dir, class_name)
-
-        if not os.path.exists(class_dir):
-            continue
-
-        for status in ['Usable', 'Limited', 'Unusable']:
-            status_dir = os.path.join(class_dir, status)
-            
-            if not os.path.exists(status_dir):
-                continue
-
-            for img_file in get_images_list(status_dir):
-                rows.append({
-                    'filename': img_file,
-                    'label': class_name,
-                    'has_alternative': '',
-                    'status': status
-                })
-
-    return rows
 
 
 def get_visual_guide_info():

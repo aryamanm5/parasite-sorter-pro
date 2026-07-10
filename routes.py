@@ -2,10 +2,16 @@ import os
 import io
 from flask import jsonify, request, send_file
 
-from config import CLASS_MAPPING, FIRST_ROW_CLASSES, SECOND_ROW_CLASSES, ADJACENCY_MAP, AUTO_ADVANCE_CLASSES, TOP_VISUAL_GUIDE_FILE
+from config import (
+    CLASS_MAPPING,
+    ADJACENCY_MAP,
+    AUTO_ADVANCE_CLASSES,
+    NO_ALTERNATIVE_CLASSES,
+    TOP_VISUAL_GUIDE_FILE,
+)
 from session_manager import (
-    get_session_data, 
-    cleanup_old_sessions, 
+    get_session_data,
+    cleanup_old_sessions,
     reset_current_selection,
     clear_session_data
 )
@@ -14,11 +20,27 @@ from file_handler import (
     extract_images_from_zip,
     classify_image,
     undo_classification,
+    redo_classification,
+    flag_current_image,
     create_download_zip,
     create_progress_csv,
     load_progress_csv,
     is_adjacent
 )
+
+
+def _state_payload(session_data):
+    """Common state fields returned by every action that changes the queue."""
+    images = get_images_list(session_data['unsorted_dir'])
+    return {
+        'current_image': images[0] if images else None,
+        'remaining_count': len(images),
+        'history_count': len(session_data['history']),
+        'redo_count': len(session_data.get('redo_stack', [])),
+        'sorted_counts': get_sorted_counts(session_data['sorted_dir']),
+        'total_sorted': get_total_sorted(session_data['sorted_dir']),
+        'current_selection': session_data['current_selection'],
+    }
 
 
 def register_routes(app):
@@ -82,18 +104,9 @@ def register_routes(app):
     @app.route('/state', methods=['GET'])
     def get_state():
         session_data = get_session_data()
-        images = get_images_list(session_data['unsorted_dir'])
-        sorted_counts = get_sorted_counts(session_data['sorted_dir'])
-        total_sorted = get_total_sorted(session_data['sorted_dir'])
-
         return jsonify({
             'upload_complete': session_data['upload_complete'],
-            'current_image': images[0] if images else None,
-            'remaining_count': len(images),
-            'history_count': len(session_data['history']),
-            'sorted_counts': sorted_counts,
-            'total_sorted': total_sorted,
-            'current_selection': session_data['current_selection']
+            **_state_payload(session_data)
         })
 
     @app.route('/serve_image/<path:filename>')
@@ -124,30 +137,35 @@ def register_routes(app):
         if current['awaiting_alternative'] or current['awaiting_status']:
             return jsonify({'success': False, 'message': 'Complete current selection first'}), 400
 
-        # Check if this is an auto-advance class (Uninfected, Cannot Determine)
+        # Check if this is an auto-advance class (Uninfected)
         if key in AUTO_ADVANCE_CLASSES:
             # Auto-classify as Usable and move to next
             success, message = classify_image(session_data, key, None, 'Usable', True)
-            
+
             if success:
                 reset_current_selection(session_data)
-                images = get_images_list(session_data['unsorted_dir'])
-                sorted_counts = get_sorted_counts(session_data['sorted_dir'])
-                total_sorted = get_total_sorted(session_data['sorted_dir'])
-
                 return jsonify({
                     'success': True,
                     'auto_advanced': True,
                     'message': message,
-                    'current_image': images[0] if images else None,
-                    'remaining_count': len(images),
-                    'history_count': len(session_data['history']),
-                    'sorted_counts': sorted_counts,
-                    'total_sorted': total_sorted,
-                    'current_selection': session_data['current_selection']
+                    **_state_payload(session_data)
                 })
             else:
                 return jsonify({'success': False, 'message': message}), 500
+
+        # No-alternative class (Cannot Determine): skip the alternative step but
+        # still ask the user for Usable / Limited / Unusable.
+        if key in NO_ALTERNATIVE_CLASSES:
+            current['first_label'] = key
+            current['second_label'] = None
+            current['awaiting_alternative'] = False
+            current['awaiting_status'] = True
+
+            return jsonify({
+                'success': True,
+                'selection': current,
+                'show_status_buttons': True
+            })
 
         # Set first label and move to awaiting_alternative state
         current['first_label'] = key
@@ -247,20 +265,10 @@ def register_routes(app):
 
         if success:
             reset_current_selection(session_data)
-            
-            images = get_images_list(session_data['unsorted_dir'])
-            sorted_counts = get_sorted_counts(session_data['sorted_dir'])
-            total_sorted = get_total_sorted(session_data['sorted_dir'])
-
             return jsonify({
                 'success': True,
                 'message': message,
-                'current_image': images[0] if images else None,
-                'remaining_count': len(images),
-                'history_count': len(session_data['history']),
-                'sorted_counts': sorted_counts,
-                'total_sorted': total_sorted,
-                'current_selection': session_data['current_selection']
+                **_state_payload(session_data)
             })
 
         return jsonify({'success': False, 'message': message}), 500
@@ -268,24 +276,67 @@ def register_routes(app):
     @app.route('/undo', methods=['POST'])
     def undo():
         session_data = get_session_data()
-        
+
         success, message = undo_classification(session_data)
         reset_current_selection(session_data)
-
-        images = get_images_list(session_data['unsorted_dir'])
-        sorted_counts = get_sorted_counts(session_data['sorted_dir'])
-        total_sorted = get_total_sorted(session_data['sorted_dir'])
 
         return jsonify({
             'success': success,
             'message': message,
-            'current_image': images[0] if images else None,
-            'remaining_count': len(images),
-            'history_count': len(session_data['history']),
-            'sorted_counts': sorted_counts,
-            'total_sorted': total_sorted,
-            'current_selection': session_data['current_selection']
+            **_state_payload(session_data)
         })
+
+    @app.route('/redo', methods=['POST'])
+    def redo():
+        session_data = get_session_data()
+
+        success, message = redo_classification(session_data)
+        reset_current_selection(session_data)
+
+        return jsonify({
+            'success': success,
+            'message': message,
+            **_state_payload(session_data)
+        })
+
+    @app.route('/flag', methods=['POST'])
+    def flag():
+        session_data = get_session_data()
+
+        success, message = flag_current_image(session_data)
+        reset_current_selection(session_data)
+
+        return jsonify({
+            'success': success,
+            'message': message,
+            **_state_payload(session_data)
+        })
+
+    @app.route('/step_back', methods=['POST'])
+    def step_back():
+        """Undo the most recent selection step; report whether anything changed."""
+        session_data = get_session_data()
+        current = session_data['current_selection']
+
+        if current['awaiting_status']:
+            # Cannot Determine skipped the alternative step, so step straight back to
+            # a clean slate; every other class steps back to alternative selection.
+            if current['first_label'] in NO_ALTERNATIVE_CLASSES:
+                reset_current_selection(session_data)
+            else:
+                current['awaiting_status'] = False
+                current['awaiting_alternative'] = True
+                current['second_label'] = None
+            return jsonify({'success': True, 'stepped': True,
+                            'current_selection': session_data['current_selection']})
+
+        if current['awaiting_alternative'] or current['first_label']:
+            reset_current_selection(session_data)
+            return jsonify({'success': True, 'stepped': True,
+                            'current_selection': session_data['current_selection']})
+
+        # Nothing selected — caller should fall back to a full undo.
+        return jsonify({'success': True, 'stepped': False})
 
     @app.route('/download', methods=['GET'])
     def download():
@@ -345,18 +396,10 @@ def register_routes(app):
         success, message, count = load_progress_csv(session_data, file)
 
         if success:
-            images = get_images_list(session_data['unsorted_dir'])
-            sorted_counts = get_sorted_counts(session_data['sorted_dir'])
-            total_sorted = get_total_sorted(session_data['sorted_dir'])
-
             return jsonify({
                 'success': True,
                 'message': message,
-                'current_image': images[0] if images else None,
-                'remaining_count': len(images),
-                'history_count': len(session_data['history']),
-                'sorted_counts': sorted_counts,
-                'total_sorted': total_sorted
+                **_state_payload(session_data)
             })
 
         return jsonify({'success': False, 'message': message}), 400

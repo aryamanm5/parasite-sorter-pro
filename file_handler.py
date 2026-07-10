@@ -6,7 +6,19 @@ import io
 from werkzeug.utils import secure_filename
 
 from config import CLASS_MAPPING, STATUS_SUBFOLDERS, ADJACENCY_MAP
-from utils import allowed_file, get_images_list, get_unique_filename, get_sorted_counts
+from utils import allowed_file, get_images_list, get_unique_filename
+
+# Flagged images are renamed with this prefix so they sort to the back of the
+# unsorted set (the app always classifies get_images_list()[0]). '~' sorts after
+# all letters/digits. ponytail: reuse the alphabetical ordering, no extra queue state.
+FLAG_PREFIX = '~flag~'
+
+
+def strip_flag(name):
+    """Recover the original filename from a flagged (renamed) file."""
+    if name.startswith(FLAG_PREFIX):
+        return name.split('~', 3)[-1]  # ['', 'flag', '<counter>', '<original>']
+    return name
 
 
 def extract_images_from_zip(zip_file, unsorted_dir, session_dir):
@@ -55,27 +67,32 @@ def is_adjacent(first_key, second_key):
     return second_key in adjacent_keys
 
 
-def classify_image(session_data, first_label, second_label, status, is_adjacent_selection=True):
+def classify_image(session_data, first_label, second_label, status, is_adjacent_selection=True, is_redo=False):
     """
     Classify current image with labels and status.
     Returns success status and message.
     """
     images = get_images_list(session_data['unsorted_dir'])
-    
+
     if not images:
         return False, 'No images left to classify'
 
     img_name = images[0]
     src_path = os.path.join(session_data['unsorted_dir'], img_name)
-    
+    original_name = strip_flag(img_name)  # store/output under the real name, not the flag alias
+
     # Get class name from first label
     first_class = CLASS_MAPPING.get(first_label)
     if not first_class:
         return False, 'Invalid first label'
 
+    # A fresh classification invalidates the redo history.
+    if not is_redo:
+        session_data['redo_stack'] = []
+
     # Primary destination
     primary_dir = os.path.join(session_data['sorted_dir'], first_class, status)
-    primary_filename = get_unique_filename(primary_dir, img_name)
+    primary_filename = get_unique_filename(primary_dir, original_name)
     primary_path = os.path.join(primary_dir, primary_filename)
 
     try:
@@ -90,7 +107,7 @@ def classify_image(session_data, first_label, second_label, status, is_adjacent_
             second_class = CLASS_MAPPING.get(second_label)
             if second_class:
                 second_dir = os.path.join(session_data['sorted_dir'], second_class, 'Second_Choice')
-                second_filename = get_unique_filename(second_dir, img_name)
+                second_filename = get_unique_filename(second_dir, original_name)
                 second_path = os.path.join(second_dir, second_filename)
                 shutil.copy2(src_path, second_path)
 
@@ -99,7 +116,7 @@ def classify_image(session_data, first_label, second_label, status, is_adjacent_
 
         # Record in history with adjacency flag
         session_data['history'].append({
-            'original_filename': img_name,
+            'original_filename': original_name,
             'primary_filename': primary_filename,
             'primary_class': first_class,
             'primary_status': status,
@@ -121,6 +138,15 @@ def undo_classification(session_data):
         return False, 'Nothing to undo'
 
     entry = session_data['history'].pop()
+
+    # Remember how to replay this classification if the user hits Redo.
+    name_to_key = {v: k for k, v in CLASS_MAPPING.items()}
+    session_data.setdefault('redo_stack', []).append({
+        'first_key': name_to_key.get(entry['primary_class']),
+        'second_key': name_to_key.get(entry['second_class']) if entry.get('second_class') else None,
+        'status': entry['primary_status'],
+        'is_adjacent': entry.get('is_adjacent', True),
+    })
 
     try:
         # Restore from primary location
@@ -154,6 +180,52 @@ def undo_classification(session_data):
 
     except Exception as e:
         return False, f'Undo error: {str(e)}'
+
+
+def redo_classification(session_data):
+    """Replay the most recently undone classification."""
+    stack = session_data.get('redo_stack', [])
+    if not stack:
+        return False, 'Nothing to redo'
+
+    entry = stack.pop()
+    if not entry.get('first_key'):
+        return False, 'Cannot redo'
+
+    return classify_image(
+        session_data,
+        entry['first_key'],
+        entry.get('second_key'),
+        entry['status'],
+        entry.get('is_adjacent', True),
+        is_redo=True
+    )
+
+
+def flag_current_image(session_data):
+    """Skip the current image and send it to the back of the unsorted set."""
+    images = get_images_list(session_data['unsorted_dir'])
+    if not images:
+        return False, 'No image to flag'
+
+    img_name = images[0]
+    original = strip_flag(img_name)
+    counter = session_data.get('flag_counter', 0) + 1
+    session_data['flag_counter'] = counter
+
+    new_name = f'{FLAG_PREFIX}{counter:06d}~{original}'
+    src = os.path.join(session_data['unsorted_dir'], img_name)
+    dst = os.path.join(
+        session_data['unsorted_dir'],
+        get_unique_filename(session_data['unsorted_dir'], new_name)
+    )
+
+    try:
+        os.rename(src, dst)
+        session_data['redo_stack'] = []  # front image changed; redo no longer applies
+        return True, 'Flagged — moved to the back'
+    except Exception as e:
+        return False, f'Flag error: {str(e)}'
 
 
 def create_download_zip(session_data):
