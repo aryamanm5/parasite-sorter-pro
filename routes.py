@@ -32,6 +32,7 @@ from file_handler import (
 def _state_payload(session_data):
     """Common state fields returned by every action that changes the queue."""
     images = get_images_list(session_data['unsorted_dir'])
+    times = [e['time_spent'] for e in session_data['history'] if e.get('time_spent')]
     return {
         'current_image': images[0] if images else None,
         'remaining_count': len(images),
@@ -40,6 +41,8 @@ def _state_payload(session_data):
         'sorted_counts': get_sorted_counts(session_data['sorted_dir']),
         'total_sorted': get_total_sorted(session_data['sorted_dir']),
         'current_selection': session_data['current_selection'],
+        'last_time': times[-1] if times else 0,
+        'avg_time': sum(times) / len(times) if times else 0,
     }
 
 
@@ -83,11 +86,13 @@ def register_routes(app):
 
         try:
             count = extract_images_from_zip(
-                file, 
+                file,
                 session_data['unsorted_dir'],
                 session_data['session_dir']
             )
 
+            # Remember the dataset name to default the download/save filenames.
+            session_data['dataset_name'] = os.path.splitext(os.path.basename(file.filename))[0]
             session_data['history'] = []
             session_data['upload_complete'] = True
             reset_current_selection(session_data)
@@ -140,7 +145,8 @@ def register_routes(app):
         # Check if this is an auto-advance class (Uninfected)
         if key in AUTO_ADVANCE_CLASSES:
             # Auto-classify as Usable and move to next
-            success, message = classify_image(session_data, key, None, 'Usable', True)
+            success, message = classify_image(session_data, key, None, 'Usable', True,
+                                              time_spent=data.get('time_spent'))
 
             if success:
                 reset_current_selection(session_data)
@@ -260,7 +266,8 @@ def register_routes(app):
             current['first_label'],
             current['second_label'],
             status,
-            is_adjacent_selection
+            is_adjacent_selection,
+            time_spent=data.get('time_spent')
         )
 
         if success:
@@ -348,11 +355,12 @@ def register_routes(app):
 
         try:
             zip_path = create_download_zip(session_data)
+            name = session_data.get('dataset_name') or 'sorted_dataset'
             return send_file(
                 zip_path,
                 mimetype='application/zip',
                 as_attachment=True,
-                download_name='sorted_dataset.zip'
+                download_name=f'{name}_sorted.zip'
             )
         except Exception as e:
             return f"Download error: {str(e)}", 500
@@ -369,11 +377,12 @@ def register_routes(app):
             csv_bytes = io.BytesIO(csv_content.encode('utf-8'))
             csv_bytes.seek(0)
 
+            name = session_data.get('dataset_name') or 'classification'
             return send_file(
                 csv_bytes,
                 mimetype='text/csv',
                 as_attachment=True,
-                download_name='classification_progress.csv'
+                download_name=f'{name}_progress.csv'
             )
         except Exception as e:
             return f"Error: {str(e)}", 500

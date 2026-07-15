@@ -79,7 +79,12 @@ def get_html_template(visual_guide=None):
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            min-height: 100vh;
+            /* App shell: pin to the viewport so inner areas (sidebar list, image,
+               button bar) scroll/clip internally. Without this, collapsing the
+               sidebar reflows its content to ~0 width, making it enormously tall
+               and shoving the class buttons off the bottom of the screen. */
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             -webkit-font-smoothing: antialiased;
@@ -160,6 +165,25 @@ def get_html_template(visual_guide=None):
             transition: width 0.3s ease;
         }}
 
+        .time-display {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 14px;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }}
+
+        .time-display.hidden {{
+            display: none;
+        }}
+
+        .time-icon {{
+            font-size: 14px;
+        }}
+
         .header-actions {{
             display: flex;
             align-items: center;
@@ -236,6 +260,7 @@ def get_html_template(visual_guide=None):
             display: flex;
             flex: 1;
             overflow: hidden;
+            min-height: 0;   /* don't let a tall child stretch this past the viewport */
         }}
 
         /* Sidebar */
@@ -277,8 +302,8 @@ def get_html_template(visual_guide=None):
             left: 320px;
             top: 50%;
             transform: translateY(-50%);
-            width: 16px;
-            height: 40px;
+            width: 18px;
+            height: 44px;
             background: var(--bg-secondary);
             border: 1px solid var(--border-light);
             border-left: none;
@@ -287,14 +312,29 @@ def get_html_template(visual_guide=None):
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 50;
-            transition: var(--transition);
+            z-index: 200;
+            transition: left 0.25s ease, background 0.2s ease, color 0.2s ease;
             color: var(--text-tertiary);
-            font-size: 10px;
+            font-size: 11px;
+            box-shadow: var(--shadow-md);
         }}
 
+        /* When collapsed the toggle is the only way back, so make it an obvious
+           tab floating over the workspace instead of a thin hidden sliver. */
         .sidebar.collapsed ~ .sidebar-toggle {{
             left: 0;
+            width: 26px;
+            height: 60px;
+            background: var(--pastel-blue);
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 700;
+            border-color: var(--accent-hover);
+        }}
+
+        .sidebar.collapsed ~ .sidebar-toggle:hover {{
+            background: var(--accent-hover);
+            color: #fff;
         }}
 
         .sidebar-toggle:hover {{
@@ -427,6 +467,7 @@ def get_html_template(visual_guide=None):
             flex-direction: column;
             overflow: hidden;
             position: relative;
+            min-height: 0;   /* let the column shrink so the button bar never clips */
         }}
 
         .workspace-content {{
@@ -435,6 +476,7 @@ def get_html_template(visual_guide=None):
             flex-direction: column;
             padding: 16px;
             overflow: hidden;
+            min-height: 0;
         }}
 
         /* Image Viewer */
@@ -450,7 +492,9 @@ def get_html_template(visual_guide=None):
             border: 1px solid var(--border-light);
             overflow: hidden;
             position: relative;
-            min-height: 300px;
+            /* Floor, not a fixed size: on short screens the viewer gives up space
+               to keep the class buttons on screen; on tall screens flex:1 grows it. */
+            min-height: 140px;
         }}
 
         .image-container {{
@@ -639,6 +683,7 @@ def get_html_template(visual_guide=None):
             background: var(--bg-secondary);
             border-top: 1px solid var(--border-light);
             padding: 14px 16px;
+            flex-shrink: 0;   /* never give up height — the buttons stay on screen */
         }}
 
         .classification-bar.hidden {{
@@ -799,6 +844,13 @@ def get_html_template(visual_guide=None):
         .class-btn .count-badge.has-items {{
             background: var(--pastel-green);
             color: var(--status-usable-text);
+        }}
+
+        .class-btn .pct-badge {{
+            margin-left: 5px;
+            font-size: 10px;
+            font-weight: 700;
+            opacity: 0.7;
         }}
 
         .class-btn.selected .count-badge {{
@@ -1033,17 +1085,33 @@ def get_html_template(visual_guide=None):
                     <span class="progress-stat-label">done</span>
                 </div>
             </div>
+
+            <div class="time-display hidden" id="time-display">
+                <span class="time-icon">⏱</span>
+                <div class="progress-stat">
+                    <span class="progress-stat-value" id="time-current">0:00</span>
+                    <span class="progress-stat-label">now</span>
+                </div>
+                <div class="progress-stat">
+                    <span class="progress-stat-value" id="time-last">0:00</span>
+                    <span class="progress-stat-label">last</span>
+                </div>
+                <div class="progress-stat">
+                    <span class="progress-stat-value" id="time-avg">0:00</span>
+                    <span class="progress-stat-label">avg</span>
+                </div>
+            </div>
         </div>
 
         <div class="header-actions hidden" id="header-actions">
-            <button class="btn btn-secondary" id="undo-btn" disabled onclick="executeUndo()">
-                ↩ Undo
+            <button class="btn btn-secondary btn-icon" id="undo-btn" disabled onclick="executeUndo()" title="Undo (Z)">
+                ↩
             </button>
-            <button class="btn btn-secondary" id="redo-btn" disabled onclick="executeRedo()">
-                ↪ Redo
+            <button class="btn btn-secondary btn-icon" id="redo-btn" disabled onclick="executeRedo()" title="Redo (Y)">
+                ↪
             </button>
-            <button class="btn btn-secondary" id="flag-btn" disabled onclick="flagImage()" title="Flag &amp; skip (F)">
-                🚩 Flag
+            <button class="btn btn-secondary btn-icon" id="flag-btn" disabled onclick="flagImage()" title="Flag &amp; skip (F)">
+                🚩
             </button>
             <button class="btn btn-secondary" id="save-btn" disabled onclick="saveProgress()">
                 💾 Save
@@ -1377,6 +1445,51 @@ def get_html_template(visual_guide=None):
         let pendingLeave = null;
 
         // =====================================================================
+        // PER-IMAGE TIMER
+        // ponytail: caps at 5 min — past that we assume the user stepped away,
+        // so the timer freezes instead of skewing the average. Not idle-detection.
+        // =====================================================================
+        const TIMER_CAP_MS = 5 * 60 * 1000;
+        let timerImage = null;       // which image the running timer belongs to
+        let timerStart = 0;          // Date.now() when timing began
+        let timerInterval = null;
+
+        function fmtTime(sec) {{
+            sec = Math.max(0, Math.round(sec));
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return m + ':' + String(s).padStart(2, '0');
+        }}
+
+        function elapsedSeconds() {{
+            return Math.min(Date.now() - timerStart, TIMER_CAP_MS) / 1000;
+        }}
+
+        function tickTimer() {{
+            const ms = Date.now() - timerStart;
+            if (ms >= TIMER_CAP_MS) {{
+                clearInterval(timerInterval);   // pause: likely stepped away
+                timerInterval = null;
+            }}
+            document.getElementById('time-current').textContent = fmtTime(Math.min(ms, TIMER_CAP_MS) / 1000);
+        }}
+
+        function startImageTimer(imageName) {{
+            if (timerInterval) clearInterval(timerInterval);
+            timerImage = imageName;
+            timerStart = Date.now();
+            document.getElementById('time-current').textContent = '0:00';
+            timerInterval = setInterval(tickTimer, 1000);
+        }}
+
+        function stopImageTimer() {{
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            timerImage = null;
+            document.getElementById('time-current').textContent = '0:00';
+        }}
+
+        // =====================================================================
         // UNSAVED CHANGES DETECTION
         // =====================================================================
         function hasUnsavedChanges() {{
@@ -1443,6 +1556,16 @@ def get_html_template(visual_guide=None):
             // Header visibility
             document.getElementById('header-actions').classList.toggle('hidden', !uploadComplete);
             document.getElementById('progress-display').classList.toggle('hidden', !uploadComplete);
+            document.getElementById('time-display').classList.toggle('hidden', !uploadComplete);
+
+            // Per-image timer: restart on a new image, stop when none left.
+            document.getElementById('time-last').textContent = fmtTime(state.lastTime || 0);
+            document.getElementById('time-avg').textContent = fmtTime(state.avgTime || 0);
+            if (uploadComplete && hasImage) {{
+                if (state.currentImage !== timerImage) startImageTimer(state.currentImage);
+            }} else if (timerImage !== null) {{
+                stopImageTimer();
+            }}
             
             // Button states
             document.getElementById('undo-btn').disabled = !hasHistory;
@@ -1517,9 +1640,11 @@ def get_html_template(visual_guide=None):
                 const counts = state.sortedCounts[name] || {{ total: 0 }};
                 const count = counts.total || 0;
                 const badge = document.getElementById('count-' + key);
-                
+
                 if (badge) {{
-                    badge.textContent = count;
+                    // Count plus its share of all classified images (rounded to a whole %).
+                    const pct = state.totalSorted > 0 ? Math.round(count / state.totalSorted * 100) : 0;
+                    badge.innerHTML = count + '<span class="pct-badge">' + pct + '%</span>';
                     badge.classList.toggle('has-items', count > 0);
                 }}
             }}
@@ -1665,56 +1790,57 @@ def get_html_template(visual_guide=None):
         // =====================================================================
         // SIDEBAR
         // =====================================================================
-        function toggleSidebar() {{
+        // Single source of truth for sidebar width. Collapsing CLEARS the inline
+        // width so the .collapsed rule (width:0) actually wins — otherwise an inline
+        // width left over from a drag overrides it and the sidebar never collapses.
+        function applySidebarWidth(w) {{
             const sidebar = document.getElementById('sidebar');
             const toggle = document.getElementById('sidebar-toggle');
             const icon = document.getElementById('toggle-icon');
 
-            sidebar.classList.toggle('collapsed');
-            
-            if (sidebar.classList.contains('collapsed')) {{
-                icon.textContent = '›';
+            if (w <= 40) {{
+                sidebar.classList.add('collapsed');
+                sidebar.style.width = '';
                 toggle.style.left = '0';
+                icon.textContent = '›';
             }} else {{
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = w + 'px';
+                toggle.style.left = w + 'px';
                 icon.textContent = '‹';
-                toggle.style.left = sidebarWidth + 'px';
+                sidebarWidth = w;   // remember last expanded width for reopen
             }}
+        }}
+
+        function toggleSidebar() {{
+            const collapsed = document.getElementById('sidebar').classList.contains('collapsed');
+            applySidebarWidth(collapsed ? (sidebarWidth || 320) : 0);
         }}
 
         // Sidebar resize
         (function initSidebarResize() {{
             const sidebar = document.getElementById('sidebar');
             const resizer = document.getElementById('sidebar-resize');
-            const toggle = document.getElementById('sidebar-toggle');
 
             let isResizing = false;
 
             resizer.addEventListener('mousedown', (e) => {{
                 isResizing = true;
+                sidebar.style.transition = 'none';   // no easing lag while dragging
                 document.body.style.cursor = 'ew-resize';
                 document.body.style.userSelect = 'none';
+                e.preventDefault();
             }});
 
             document.addEventListener('mousemove', (e) => {{
                 if (!isResizing) return;
-                
-                const newWidth = Math.max(0, Math.min(450, e.clientX));
-                sidebarWidth = newWidth;
-                
-                if (newWidth < 80) {{
-                    sidebar.classList.add('collapsed');
-                    toggle.style.left = '0';
-                    document.getElementById('toggle-icon').textContent = '›';
-                }} else {{
-                    sidebar.classList.remove('collapsed');
-                    sidebar.style.width = newWidth + 'px';
-                    toggle.style.left = newWidth + 'px';
-                    document.getElementById('toggle-icon').textContent = '‹';
-                }}
+                applySidebarWidth(Math.max(0, Math.min(450, e.clientX)));
             }});
 
             document.addEventListener('mouseup', () => {{
+                if (!isResizing) return;
                 isResizing = false;
+                sidebar.style.transition = '';
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
             }});
@@ -1730,6 +1856,8 @@ def get_html_template(visual_guide=None):
             state.redoCount = data.redo_count || 0;
             state.sortedCounts = data.sorted_counts;
             state.totalSorted = data.total_sorted;
+            state.lastTime = data.last_time || 0;
+            state.avgTime = data.avg_time || 0;
             if (data.current_selection !== undefined) {{
                 state.currentSelection = data.current_selection;
             }}
@@ -1772,7 +1900,7 @@ def get_html_template(visual_guide=None):
                 const res = await fetch('/select_label', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ key }})
+                    body: JSON.stringify({{ key, time_spent: elapsedSeconds() }})
                 }});
 
                 const data = await res.json();
@@ -1840,7 +1968,7 @@ def get_html_template(visual_guide=None):
                 const res = await fetch('/finalize', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ status }})
+                    body: JSON.stringify({{ status, time_spent: elapsedSeconds() }})
                 }});
 
                 const data = await res.json();
@@ -2053,6 +2181,17 @@ def get_html_template(visual_guide=None):
 
             const key = e.key;
             const sel = state.currentSelection;
+
+            // Q/W/E = quick class shortcuts for Platelet / Uninfected / Cannot Determine
+            // (only during Step 1, mirroring pressing 9 / 0 / - directly).
+            const QWE = {{ q: '9', w: '0', e: '-' }};
+            if (QWE[key.toLowerCase()] !== undefined) {{
+                e.preventDefault();
+                if (!sel.awaiting_status && !sel.awaiting_alternative) {{
+                    selectLabel(QWE[key.toLowerCase()]);
+                }}
+                return;
+            }}
 
             // Number keys 0-9 and minus for classification
             if (/^[0-9]$/.test(key) || key === '-') {{

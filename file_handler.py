@@ -67,7 +67,7 @@ def is_adjacent(first_key, second_key):
     return second_key in adjacent_keys
 
 
-def classify_image(session_data, first_label, second_label, status, is_adjacent_selection=True, is_redo=False):
+def classify_image(session_data, first_label, second_label, status, is_adjacent_selection=True, is_redo=False, time_spent=None):
     """
     Classify current image with labels and status.
     Returns success status and message.
@@ -123,6 +123,7 @@ def classify_image(session_data, first_label, second_label, status, is_adjacent_
             'second_class': second_class,
             'second_filename': second_filename,
             'is_adjacent': is_adjacent_selection,
+            'time_spent': time_spent,
             'src_dir': session_data['unsorted_dir']
         })
 
@@ -146,6 +147,7 @@ def undo_classification(session_data):
         'second_key': name_to_key.get(entry['second_class']) if entry.get('second_class') else None,
         'status': entry['primary_status'],
         'is_adjacent': entry.get('is_adjacent', True),
+        'time_spent': entry.get('time_spent'),
     })
 
     try:
@@ -198,7 +200,8 @@ def redo_classification(session_data):
         entry.get('second_key'),
         entry['status'],
         entry.get('is_adjacent', True),
-        is_redo=True
+        is_redo=True,
+        time_spent=entry.get('time_spent'),
     )
 
 
@@ -260,18 +263,20 @@ def create_progress_csv(session_data):
     """Create CSV content from history with adjacency flag."""
     output = io.StringIO()
     writer = csv.DictWriter(
-        output, 
-        fieldnames=['filename', 'first_label', 'second_label', 'status', 'is_adjacent']
+        output,
+        fieldnames=['filename', 'first_label', 'second_label', 'status', 'is_adjacent', 'time_spent_sec']
     )
     writer.writeheader()
 
     for entry in session_data['history']:
+        t = entry.get('time_spent')
         writer.writerow({
             'filename': entry['original_filename'],
             'first_label': entry['primary_class'],
             'second_label': entry.get('second_class', '') or '',
             'status': entry['primary_status'],
-            'is_adjacent': 'Yes' if entry.get('is_adjacent', True) else 'No'
+            'is_adjacent': 'Yes' if entry.get('is_adjacent', True) else 'No',
+            'time_spent_sec': round(t, 1) if t else ''
         })
 
     return output.getvalue()
@@ -299,6 +304,11 @@ def load_progress_csv(session_data, csv_file):
             second_label = (row.get('second_label') or '').strip()
             status = (row.get('status') or '').strip()
             is_adjacent_str = (row.get('is_adjacent') or 'Yes').strip()
+            time_str = (row.get('time_spent_sec') or row.get('time_spent') or '').strip()
+            try:
+                time_spent = float(time_str) if time_str else None
+            except ValueError:
+                time_spent = None
 
             if not filename or not first_label or status not in ['Usable', 'Limited', 'Unusable']:
                 errors.append(f"Row {row_index}: invalid data")
@@ -321,7 +331,7 @@ def load_progress_csv(session_data, csv_file):
             is_adjacent_selection = is_adjacent_str.lower() == 'yes' if is_adjacent_str else True
 
             # Classify the image
-            success, msg = classify_image(session_data, first_key, second_key, status, is_adjacent_selection)
+            success, msg = classify_image(session_data, first_key, second_key, status, is_adjacent_selection, time_spent=time_spent)
             
             if success:
                 applied += 1
