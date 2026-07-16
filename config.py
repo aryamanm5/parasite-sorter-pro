@@ -16,14 +16,11 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp'}
 SESSION_TIMEOUT_HOURS = 2
 
-# Visual guide file - set this to your guide image/pdf filename
-TOP_VISUAL_GUIDE_FILE = "visual_guide.png"
-
 # Default zoom level. The image fills the viewer at 1.0 (fit-to-display); this is a
 # multiplier on top of that. Tune this knob to taste — lower = smaller start.
 DEFAULT_ZOOM = 2
 
-# Class mapping - keys are keyboard inputs, values are class names
+# Class mapping - keys are keyboard inputs, values are class names (and folder names).
 CLASS_MAPPING = {
     '1': 'Early Ring',
     '2': 'Middle Ring',
@@ -38,13 +35,22 @@ CLASS_MAPPING = {
     '-': 'Cannot Determine'
 }
 
-# Auto-advance classes - these skip alternative and status selection, auto-classify as "Usable"
-AUTO_ADVANCE_CLASSES = ['0']  # Uninfected
+NAME_TO_KEY = {v: k for k, v in CLASS_MAPPING.items()}
 
-# No-alternative classes - skip the alternative step but still prompt for Usable/Limited/Unusable
-NO_ALTERNATIVE_CLASSES = ['-']  # Cannot Determine
+# Image quality — also the subfolder each classified image lands in.
+STATUSES = ('Usable', 'Limited', 'Unusable')
 
-# Adjacency mapping for first row (which keys can be selected as alternative)
+# Uninfected: one keypress classifies it Usable, skipping the alternative and status steps.
+AUTO_ADVANCE_CLASSES = ['0']
+
+# Cannot Determine: skip the alternative step, still prompt for Usable/Limited/Unusable.
+SKIP_ALTERNATIVE_CLASSES = ['-']
+
+# Never offered as somebody else's alternative — "Early Ring, or possibly Uninfected"
+# is not a judgement anyone makes.
+NOT_OFFERED_AS_ALTERNATIVE = ['0', '-']
+
+# Adjacency mapping for first row (which keys are the expected alternative)
 ADJACENCY_MAP = {
     '1': ['2'],           # Early Ring -> Middle Ring
     '2': ['1', '3'],      # Middle Ring -> Early Ring, Late Ring
@@ -53,5 +59,13 @@ ADJACENCY_MAP = {
     '5': ['4']            # Schizont -> Trophozoite
 }
 
-# Subfolders for each class
-STATUS_SUBFOLDERS = ['Usable', 'Limited', 'Unusable', 'Second_Choice']
+# The browser owns the 3-step selection flow, so it needs these same constants.
+# Injected into the page as JSON — one source of truth, no hand-copied JS literals.
+JS_CONFIG = {
+    'classMap': CLASS_MAPPING,
+    'adjacency': ADJACENCY_MAP,
+    'autoAdvance': AUTO_ADVANCE_CLASSES,
+    'skipAlternative': SKIP_ALTERNATIVE_CLASSES,
+    'notOfferedAsAlternative': NOT_OFFERED_AS_ALTERNATIVE,
+    'defaultZoom': DEFAULT_ZOOM,
+}

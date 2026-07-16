@@ -1,23 +1,13 @@
-import os
 import io
-from flask import jsonify, request, send_file
+import os
+from flask import jsonify, render_template, request, send_file, send_from_directory
 
-from config import (
-    CLASS_MAPPING,
-    ADJACENCY_MAP,
-    AUTO_ADVANCE_CLASSES,
-    NO_ALTERNATIVE_CLASSES,
-    TOP_VISUAL_GUIDE_FILE,
-)
-from session_manager import (
-    get_session_data,
-    cleanup_old_sessions,
-    reset_current_selection,
-    clear_session_data
-)
-from utils import get_images_list, get_sorted_counts, get_total_sorted, get_visual_guide_info
+from config import CLASS_MAPPING, JS_CONFIG, STATUSES
+from session_manager import get_session_data, cleanup_old_sessions, reset_session
+from utils import get_images_list, get_sorted_counts, float_or_none
 from file_handler import (
     extract_images_from_zip,
+    current_image,
     classify_image,
     undo_classification,
     redo_classification,
@@ -25,22 +15,22 @@ from file_handler import (
     create_download_zip,
     create_progress_csv,
     load_progress_csv,
-    is_adjacent
 )
 
 
 def _state_payload(session_data):
     """Common state fields returned by every action that changes the queue."""
     images = get_images_list(session_data['unsorted_dir'])
-    times = [e['time_spent'] for e in session_data['history'] if e.get('time_spent')]
+    counts = get_sorted_counts(session_data['sorted_dir'])
+    times = [e['time_spent'] for e in session_data['history'] if e['time_spent']]
+
     return {
         'current_image': images[0] if images else None,
         'remaining_count': len(images),
         'history_count': len(session_data['history']),
-        'redo_count': len(session_data.get('redo_stack', [])),
-        'sorted_counts': get_sorted_counts(session_data['sorted_dir']),
-        'total_sorted': get_total_sorted(session_data['sorted_dir']),
-        'current_selection': session_data['current_selection'],
+        'redo_count': len(session_data['redo_stack']),
+        'sorted_counts': counts,
+        'total_sorted': sum(counts.values()),
         'last_time': times[-1] if times else 0,
         'avg_time': sum(times) / len(times) if times else 0,
     }
@@ -51,23 +41,9 @@ def register_routes(app):
 
     @app.route('/')
     def index():
-        from templates import get_html_template
         cleanup_old_sessions()
         get_session_data()  # Initialize session
-        visual_guide = get_visual_guide_info()
-        return get_html_template(visual_guide)
-
-    @app.route('/visual_guide')
-    def visual_guide():
-        if not TOP_VISUAL_GUIDE_FILE:
-            return "No visual guide configured", 404
-
-        full_path = os.path.abspath(TOP_VISUAL_GUIDE_FILE)
-
-        if not os.path.exists(full_path):
-            return "Visual guide not found", 404
-
-        return send_file(full_path)
+        return render_template('index.html', cfg=JS_CONFIG)
 
     @app.route('/upload_dataset', methods=['POST'])
     def upload_dataset():
@@ -94,8 +70,8 @@ def register_routes(app):
             # Remember the dataset name to default the download/save filenames.
             session_data['dataset_name'] = os.path.splitext(os.path.basename(file.filename))[0]
             session_data['history'] = []
+            session_data['redo_stack'] = []
             session_data['upload_complete'] = True
-            reset_current_selection(session_data)
 
             return jsonify({
                 'success': True,
@@ -114,248 +90,83 @@ def register_routes(app):
             **_state_payload(session_data)
         })
 
-    @app.route('/serve_image/<path:filename>')
+    @app.route('/serve_image/<filename>')
     def serve_image(filename):
         session_data = get_session_data()
-        return send_file(os.path.join(session_data['unsorted_dir'], filename))
+        return send_from_directory(session_data['unsorted_dir'], filename)
 
-    @app.route('/select_label', methods=['POST'])
-    def select_label():
-        """Handle initial label selection (single label only)."""
+    @app.route('/classify', methods=['POST'])
+    def classify():
+        """Classify the front image.
+
+        The browser owns the class -> alternative -> status flow; this endpoint only
+        ever sees the finished triple. Mirroring those steps server-side bought
+        nothing but round-trips and a second copy of the class tables.
+        """
         session_data = get_session_data()
-        data = request.get_json()
-        key = data.get('key')
+        data = request.get_json(silent=True) or {}
 
         if not session_data['upload_complete']:
             return jsonify({'success': False, 'message': 'Upload dataset first'}), 400
 
-        images = get_images_list(session_data['unsorted_dir'])
-        if not images:
-            return jsonify({'success': False, 'message': 'No images left'}), 400
-
-        if key not in CLASS_MAPPING:
-            return jsonify({'success': False, 'message': 'Invalid key'}), 400
-
-        current = session_data['current_selection']
-
-        # Don't allow selection if already waiting for alternative or status
-        if current['awaiting_alternative'] or current['awaiting_status']:
-            return jsonify({'success': False, 'message': 'Complete current selection first'}), 400
-
-        # Check if this is an auto-advance class (Uninfected)
-        if key in AUTO_ADVANCE_CLASSES:
-            # Auto-classify as Usable and move to next
-            success, message = classify_image(session_data, key, None, 'Usable', True,
-                                              time_spent=data.get('time_spent'))
-
-            if success:
-                reset_current_selection(session_data)
-                return jsonify({
-                    'success': True,
-                    'auto_advanced': True,
-                    'message': message,
-                    **_state_payload(session_data)
-                })
-            else:
-                return jsonify({'success': False, 'message': message}), 500
-
-        # No-alternative class (Cannot Determine): skip the alternative step but
-        # still ask the user for Usable / Limited / Unusable.
-        if key in NO_ALTERNATIVE_CLASSES:
-            current['first_label'] = key
-            current['second_label'] = None
-            current['awaiting_alternative'] = False
-            current['awaiting_status'] = True
-
-            return jsonify({
-                'success': True,
-                'selection': current,
-                'show_status_buttons': True
-            })
-
-        # Set first label and move to awaiting_alternative state
-        current['first_label'] = key
-        current['second_label'] = None
-        current['awaiting_alternative'] = True
-        current['awaiting_status'] = False
-
-        # Determine adjacent options
-        adjacent = ADJACENCY_MAP.get(key, [])
-
-        return jsonify({
-            'success': True,
-            'selection': current,
-            'adjacent_options': adjacent,
-            'show_no_alternative': True
-        })
-
-    @app.route('/select_alternative', methods=['POST'])
-    def select_alternative():
-        """Handle alternative label selection or 'No Alternative'."""
-        session_data = get_session_data()
-        data = request.get_json()
-        alternative_key = data.get('key')  # Can be a class key or 'none'
-
-        current = session_data['current_selection']
-
-        if not current['awaiting_alternative']:
-            return jsonify({'success': False, 'message': 'Not awaiting alternative selection'}), 400
-
-        first_key = current['first_label']
-        
-        if alternative_key == 'none':
-            # No alternative selected
-            current['second_label'] = None
-            is_adjacent_selection = True
-        else:
-            # Check if valid alternative
-            if alternative_key not in CLASS_MAPPING:
-                return jsonify({'success': False, 'message': 'Invalid alternative key'}), 400
-            
-            current['second_label'] = alternative_key
-            # Check adjacency for CSV flag
-            is_adjacent_selection = is_adjacent(first_key, alternative_key)
-
-        # Move to status selection
-        current['awaiting_alternative'] = False
-        current['awaiting_status'] = True
-
-        return jsonify({
-            'success': True,
-            'selection': current,
-            'is_adjacent': is_adjacent_selection,
-            'show_status_buttons': True
-        })
-
-    @app.route('/clear_selection', methods=['POST'])
-    def clear_selection():
-        """Clear current label selection."""
-        session_data = get_session_data()
-        reset_current_selection(session_data)
-        
-        return jsonify({
-            'success': True,
-            'selection': session_data['current_selection']
-        })
-
-    @app.route('/finalize', methods=['POST'])
-    def finalize():
-        """Finalize classification with status."""
-        session_data = get_session_data()
-        data = request.get_json()
+        first = data.get('first')
+        second = data.get('second')
         status = data.get('status')
 
-        if status not in ['Usable', 'Limited', 'Unusable']:
+        if first not in CLASS_MAPPING:
+            return jsonify({'success': False, 'message': 'Invalid label'}), 400
+
+        if second is not None and second not in CLASS_MAPPING:
+            return jsonify({'success': False, 'message': 'Invalid alternative'}), 400
+
+        if status not in STATUSES:
             return jsonify({'success': False, 'message': 'Invalid status'}), 400
 
-        current = session_data['current_selection']
-        
-        if current['first_label'] is None:
-            return jsonify({'success': False, 'message': 'No label selected'}), 400
-
-        if not current['awaiting_status']:
-            return jsonify({'success': False, 'message': 'Not ready for status selection'}), 400
-
-        # Check adjacency for CSV
-        is_adjacent_selection = True
-        if current['second_label']:
-            is_adjacent_selection = is_adjacent(current['first_label'], current['second_label'])
+        img_name = current_image(session_data)
+        if not img_name:
+            return jsonify({'success': False, 'message': 'No images left'}), 400
 
         success, message = classify_image(
-            session_data,
-            current['first_label'],
-            current['second_label'],
-            status,
-            is_adjacent_selection,
-            time_spent=data.get('time_spent')
+            session_data, img_name, first, second, status,
+            time_spent=float_or_none(data.get('time_spent'))
         )
 
-        if success:
-            reset_current_selection(session_data)
-            return jsonify({
-                'success': True,
-                'message': message,
-                **_state_payload(session_data)
-            })
+        if not success:
+            return jsonify({'success': False, 'message': message}), 500
 
-        return jsonify({'success': False, 'message': message}), 500
+        return jsonify({'success': True, 'message': message, **_state_payload(session_data)})
 
     @app.route('/undo', methods=['POST'])
     def undo():
         session_data = get_session_data()
-
         success, message = undo_classification(session_data)
-        reset_current_selection(session_data)
 
-        return jsonify({
-            'success': success,
-            'message': message,
-            **_state_payload(session_data)
-        })
+        return jsonify({'success': success, 'message': message, **_state_payload(session_data)})
 
     @app.route('/redo', methods=['POST'])
     def redo():
         session_data = get_session_data()
-
         success, message = redo_classification(session_data)
-        reset_current_selection(session_data)
 
-        return jsonify({
-            'success': success,
-            'message': message,
-            **_state_payload(session_data)
-        })
+        return jsonify({'success': success, 'message': message, **_state_payload(session_data)})
 
     @app.route('/flag', methods=['POST'])
     def flag():
         session_data = get_session_data()
-
         success, message = flag_current_image(session_data)
-        reset_current_selection(session_data)
 
-        return jsonify({
-            'success': success,
-            'message': message,
-            **_state_payload(session_data)
-        })
-
-    @app.route('/step_back', methods=['POST'])
-    def step_back():
-        """Undo the most recent selection step; report whether anything changed."""
-        session_data = get_session_data()
-        current = session_data['current_selection']
-
-        if current['awaiting_status']:
-            # Cannot Determine skipped the alternative step, so step straight back to
-            # a clean slate; every other class steps back to alternative selection.
-            if current['first_label'] in NO_ALTERNATIVE_CLASSES:
-                reset_current_selection(session_data)
-            else:
-                current['awaiting_status'] = False
-                current['awaiting_alternative'] = True
-                current['second_label'] = None
-            return jsonify({'success': True, 'stepped': True,
-                            'current_selection': session_data['current_selection']})
-
-        if current['awaiting_alternative'] or current['first_label']:
-            reset_current_selection(session_data)
-            return jsonify({'success': True, 'stepped': True,
-                            'current_selection': session_data['current_selection']})
-
-        # Nothing selected — caller should fall back to a full undo.
-        return jsonify({'success': True, 'stepped': False})
+        return jsonify({'success': success, 'message': message, **_state_payload(session_data)})
 
     @app.route('/download', methods=['GET'])
     def download():
         session_data = get_session_data()
-        total = get_total_sorted(session_data['sorted_dir'])
 
-        if total == 0:
+        if not session_data['history']:
             return "No sorted images to download", 400
 
         try:
             zip_path = create_download_zip(session_data)
-            name = session_data.get('dataset_name') or 'sorted_dataset'
+            name = session_data['dataset_name'] or 'sorted_dataset'
             return send_file(
                 zip_path,
                 mimetype='application/zip',
@@ -373,11 +184,8 @@ def register_routes(app):
             return "No progress to save", 400
 
         try:
-            csv_content = create_progress_csv(session_data)
-            csv_bytes = io.BytesIO(csv_content.encode('utf-8'))
-            csv_bytes.seek(0)
-
-            name = session_data.get('dataset_name') or 'classification'
+            csv_bytes = io.BytesIO(create_progress_csv(session_data).encode('utf-8'))
+            name = session_data['dataset_name'] or 'classification'
             return send_file(
                 csv_bytes,
                 mimetype='text/csv',
@@ -402,25 +210,17 @@ def register_routes(app):
         if not file.filename.lower().endswith('.csv'):
             return jsonify({'success': False, 'message': 'Please upload a CSV file'}), 400
 
-        success, message, count = load_progress_csv(session_data, file)
+        success, message, _ = load_progress_csv(session_data, file)
 
-        if success:
-            return jsonify({
-                'success': True,
-                'message': message,
-                **_state_payload(session_data)
-            })
+        if not success:
+            return jsonify({'success': False, 'message': message}), 400
 
-        return jsonify({'success': False, 'message': message}), 400
+        return jsonify({'success': True, 'message': message, **_state_payload(session_data)})
 
     @app.route('/reset', methods=['POST'])
     def reset():
-        session_data = get_session_data()
-        
-        if clear_session_data(session_data):
-            return jsonify({'success': True, 'message': 'Session reset'})
-        
-        return jsonify({'success': False, 'message': 'Reset failed'}), 500
+        reset_session()
+        return jsonify({'success': True, 'message': 'Session reset'})
 
     @app.route('/health')
     def health():

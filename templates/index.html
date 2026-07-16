@@ -1,23 +1,3 @@
-from config import DEFAULT_ZOOM
-
-def get_html_template(visual_guide=None):
-    """Return the main HTML template."""
-    
-    if visual_guide is None:
-        visual_guide = {'exists': False, 'url': None, 'type': None}
-    
-    visual_guide_html = ''
-    if visual_guide.get('exists'):
-        if visual_guide.get('type') == 'image':
-            visual_guide_html = f'<img class="guide-image" src="{visual_guide["url"]}" alt="Visual Guide" onclick="openLightbox(this.src)">'
-        elif visual_guide.get('type') == 'pdf':
-            visual_guide_html = f'<iframe class="guide-pdf" src="{visual_guide["url"]}"></iframe>'
-    else:
-        visual_guide_html = '<div class="guide-placeholder">Add visual_guide.png to your project folder</div>'
-
-    default_zoom_percent = int(DEFAULT_ZOOM * 100)
-
-    return f'''
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,7 +6,7 @@ def get_html_template(visual_guide=None):
     <title>Parasite Classifier</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>">
     <style>
-        :root {{
+        :root {
             --bg-primary: #f2f2f7;
             --bg-secondary: #ffffff;
             --bg-tertiary: #e5e5ea;
@@ -34,9 +14,8 @@ def get_html_template(visual_guide=None):
             --text-primary: #1c1c1e;
             --text-secondary: #8e8e93;
             --text-tertiary: #aeaeb2;
-            --accent: #a8b5c4;
             --accent-hover: #94a3b8;
-            
+
             /* Matte pastel colors */
             --pastel-blue: #b8c5d6;
             --pastel-green: #b8d4c8;
@@ -44,9 +23,8 @@ def get_html_template(visual_guide=None):
             --pastel-orange: #e4cbb8;
             --pastel-red: #dfc4c4;
             --pastel-purple: #c9c4d4;
-            --pastel-pink: #dcc4d4;
             --pastel-teal: #b8d4d4;
-            
+
             /* Status colors - matte */
             --status-usable: #c8dcc8;
             --status-usable-hover: #b8d0b8;
@@ -57,25 +35,24 @@ def get_html_template(visual_guide=None):
             --status-unusable: #dcc8c8;
             --status-unusable-hover: #d0b8b8;
             --status-unusable-text: #5d4a4a;
-            
+
             --border: #d1d1d6;
             --border-light: #e5e5ea;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
             --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
-            --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
             --transition: all 0.2s ease;
-        }}
+        }
 
-        * {{
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-        }}
+        }
 
-        body {{
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
@@ -89,10 +66,10 @@ def get_html_template(visual_guide=None):
             flex-direction: column;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-        }}
+        }
 
         /* Header */
-        .header {{
+        .header {
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-light);
             padding: 10px 20px;
@@ -103,15 +80,15 @@ def get_html_template(visual_guide=None):
             top: 0;
             z-index: 100;
             min-height: 56px;
-        }}
+        }
 
-        .header-left {{
+        .header-left {
             display: flex;
             align-items: center;
             gap: 20px;
-        }}
+        }
 
-        .logo {{
+        .logo {
             font-size: 17px;
             font-weight: 600;
             color: var(--text-primary);
@@ -119,9 +96,9 @@ def get_html_template(visual_guide=None):
             align-items: center;
             gap: 8px;
             letter-spacing: -0.3px;
-        }}
+        }
 
-        .progress-display {{
+        .progress-display {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -130,42 +107,42 @@ def get_html_template(visual_guide=None):
             border-radius: 20px;
             font-size: 13px;
             font-weight: 500;
-        }}
+        }
 
-        .progress-display.hidden {{
+        .progress-display.hidden {
             display: none;
-        }}
+        }
 
-        .progress-stat {{
+        .progress-stat {
             display: flex;
             align-items: center;
             gap: 6px;
-        }}
+        }
 
-        .progress-stat-value {{
+        .progress-stat-value {
             font-weight: 600;
             color: var(--text-primary);
-        }}
+        }
 
-        .progress-stat-label {{
+        .progress-stat-label {
             color: var(--text-secondary);
-        }}
+        }
 
-        .progress-bar-mini {{
+        .progress-bar-mini {
             width: 80px;
             height: 4px;
             background: var(--border);
             border-radius: 2px;
             overflow: hidden;
-        }}
+        }
 
-        .progress-bar-mini-fill {{
+        .progress-bar-mini-fill {
             height: 100%;
             background: var(--pastel-green);
             transition: width 0.3s ease;
-        }}
+        }
 
-        .time-display {{
+        .time-display {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -174,27 +151,27 @@ def get_html_template(visual_guide=None):
             border-radius: 20px;
             font-size: 13px;
             font-weight: 500;
-        }}
+        }
 
-        .time-display.hidden {{
+        .time-display.hidden {
             display: none;
-        }}
+        }
 
-        .time-icon {{
+        .time-icon {
             font-size: 14px;
-        }}
+        }
 
-        .header-actions {{
+        .header-actions {
             display: flex;
             align-items: center;
             gap: 6px;
-        }}
+        }
 
-        .header-actions.hidden {{
+        .header-actions.hidden {
             display: none;
-        }}
+        }
 
-        .btn {{
+        .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -208,63 +185,63 @@ def get_html_template(visual_guide=None):
             transition: var(--transition);
             white-space: nowrap;
             letter-spacing: -0.1px;
-        }}
+        }
 
-        .btn:disabled {{
+        .btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
-        }}
+        }
 
-        .btn-primary {{
+        .btn-primary {
             background: var(--pastel-blue);
             color: var(--text-primary);
-        }}
+        }
 
-        .btn-primary:hover:not(:disabled) {{
+        .btn-primary:hover:not(:disabled) {
             background: var(--accent-hover);
-        }}
+        }
 
-        .btn-secondary {{
+        .btn-secondary {
             background: var(--bg-tertiary);
             color: var(--text-primary);
-        }}
+        }
 
-        .btn-secondary:hover:not(:disabled) {{
+        .btn-secondary:hover:not(:disabled) {
             background: var(--border);
-        }}
+        }
 
-        .btn-success {{
+        .btn-success {
             background: var(--status-usable);
             color: var(--status-usable-text);
-        }}
+        }
 
-        .btn-success:hover:not(:disabled) {{
+        .btn-success:hover:not(:disabled) {
             background: var(--status-usable-hover);
-        }}
+        }
 
-        .btn-danger {{
+        .btn-danger {
             background: var(--status-unusable);
             color: var(--status-unusable-text);
-        }}
+        }
 
-        .btn-danger:hover:not(:disabled) {{
+        .btn-danger:hover:not(:disabled) {
             background: var(--status-unusable-hover);
-        }}
+        }
 
-        .btn-icon {{
+        .btn-icon {
             padding: 7px 10px;
-        }}
+        }
 
         /* Main Layout */
-        .main-container {{
+        .main-container {
             display: flex;
             flex: 1;
             overflow: hidden;
             min-height: 0;   /* don't let a tall child stretch this past the viewport */
-        }}
+        }
 
         /* Sidebar */
-        .sidebar {{
+        .sidebar {
             width: 320px;
             min-width: 0;
             max-width: 450px;
@@ -275,14 +252,14 @@ def get_html_template(visual_guide=None):
             overflow: hidden;
             position: relative;
             transition: width 0.25s ease;
-        }}
+        }
 
-        .sidebar.collapsed {{
+        .sidebar.collapsed {
             width: 0;
             min-width: 0;
-        }}
+        }
 
-        .sidebar-resize {{
+        .sidebar-resize {
             position: absolute;
             right: 0;
             top: 0;
@@ -291,13 +268,13 @@ def get_html_template(visual_guide=None):
             cursor: ew-resize;
             background: transparent;
             z-index: 10;
-        }}
+        }
 
-        .sidebar-resize:hover {{
+        .sidebar-resize:hover {
             background: var(--pastel-blue);
-        }}
+        }
 
-        .sidebar-toggle {{
+        .sidebar-toggle {
             position: absolute;
             left: 320px;
             top: 50%;
@@ -317,11 +294,11 @@ def get_html_template(visual_guide=None):
             color: var(--text-tertiary);
             font-size: 11px;
             box-shadow: var(--shadow-md);
-        }}
+        }
 
         /* When collapsed the toggle is the only way back, so make it an obvious
            tab floating over the workspace instead of a thin hidden sliver. */
-        .sidebar.collapsed ~ .sidebar-toggle {{
+        .sidebar.collapsed ~ .sidebar-toggle {
             left: 0;
             width: 26px;
             height: 60px;
@@ -330,65 +307,49 @@ def get_html_template(visual_guide=None):
             font-size: 15px;
             font-weight: 700;
             border-color: var(--accent-hover);
-        }}
+        }
 
-        .sidebar.collapsed ~ .sidebar-toggle:hover {{
+        .sidebar.collapsed ~ .sidebar-toggle:hover {
             background: var(--accent-hover);
             color: #fff;
-        }}
+        }
 
-        .sidebar-toggle:hover {{
+        .sidebar-toggle:hover {
             background: var(--bg-tertiary);
             color: var(--text-secondary);
-        }}
+        }
 
-        .sidebar-content {{
+        .sidebar-content {
             flex: 1;
             overflow-y: auto;
             padding: 12px;
-        }}
+        }
 
-        .sidebar-section {{
+        .sidebar-section {
             margin-bottom: 12px;
-        }}
+        }
 
-        .sidebar-title {{
+        .sidebar-title {
             font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-tertiary);
             margin-bottom: 6px;
-        }}
+        }
 
-        /* Guide styles */
-        .guide-image {{
+        /* Guide */
+        .guide-image {
             width: 100%;
             max-height: 200px;
             object-fit: contain;
             border-radius: var(--radius-md);
             cursor: zoom-in;
             border: 1px solid var(--border-light);
-        }}
-
-        .guide-pdf {{
-            width: 100%;
-            height: 250px;
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-        }}
-
-        .guide-placeholder {{
-            padding: 24px;
-            text-align: center;
-            color: var(--text-tertiary);
-            font-size: 12px;
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-        }}
+        }
 
         /* Cue Table */
-        .cue-table {{
+        .cue-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 10px;
@@ -396,60 +357,60 @@ def get_html_template(visual_guide=None):
             border-radius: var(--radius-sm);
             overflow: hidden;
             border: 1px solid var(--border-light);
-        }}
+        }
 
-        .cue-table th {{
+        .cue-table th {
             background: var(--bg-tertiary);
             color: var(--text-primary);
             padding: 5px 4px;
             font-weight: 600;
             text-align: center;
             border-bottom: 1px solid var(--border-light);
-        }}
+        }
 
-        .cue-table th:first-child {{
+        .cue-table th:first-child {
             text-align: left;
-        }}
+        }
 
-        .cue-table td {{
+        .cue-table td {
             padding: 4px;
             border-bottom: 1px solid var(--border-light);
             color: var(--text-primary);
-        }}
+        }
 
-        .cue-table td:not(:first-child) {{
+        .cue-table td:not(:first-child) {
             text-align: center;
             font-weight: 500;
-        }}
+        }
 
-        .cue-table tr:last-child td {{
+        .cue-table tr:last-child td {
             border-bottom: none;
-        }}
+        }
 
-        .cue-table tr:hover {{
+        .cue-table tr:hover {
             background: var(--bg-card);
-        }}
+        }
 
         /* Decision Flow */
-        .decision-flow {{
+        .decision-flow {
             margin: 0;
             padding-left: 16px;
             font-size: 11px;
             line-height: 1.35;
             color: var(--text-secondary);
-        }}
+        }
 
-        .decision-flow li {{
+        .decision-flow li {
             margin-bottom: 6px;
-        }}
+        }
 
-        .decision-flow b {{
+        .decision-flow b {
             display: block;
             color: var(--text-primary);
             font-weight: 500;
-        }}
+        }
 
-        .decision-flow .result {{
+        .decision-flow .result {
             color: var(--text-secondary);
             font-weight: 600;
             font-size: 11px;
@@ -458,29 +419,29 @@ def get_html_template(visual_guide=None):
             border-radius: 4px;
             display: inline-block;
             margin-top: 3px;
-        }}
+        }
 
         /* Workspace */
-        .workspace {{
+        .workspace {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
             min-height: 0;   /* let the column shrink so the button bar never clips */
-        }}
+        }
 
-        .workspace-content {{
+        .workspace-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             padding: 16px;
             overflow: hidden;
             min-height: 0;
-        }}
+        }
 
         /* Image Viewer */
-        .image-viewer {{
+        .image-viewer {
             flex: 1;
             display: flex;
             align-items: center;
@@ -495,9 +456,9 @@ def get_html_template(visual_guide=None):
             /* Floor, not a fixed size: on short screens the viewer gives up space
                to keep the class buttons on screen; on tall screens flex:1 grows it. */
             min-height: 140px;
-        }}
+        }
 
-        .image-container {{
+        .image-container {
             /* White card fills the viewer. Image fits inside via object-fit;
                zoom scales the image within this fixed frame. */
             width: 100%;
@@ -510,9 +471,9 @@ def get_html_template(visual_guide=None):
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-md);
             overflow: hidden;
-        }}
+        }
 
-        #current-image {{
+        #current-image {
             /* Fits the card, aspect-correct; zoom transform sizes it up/down. */
             max-width: 100%;
             max-height: 100%;
@@ -523,9 +484,9 @@ def get_html_template(visual_guide=None):
             transform: scale(1);
             transform-origin: center center;
             transition: transform 0.15s ease;
-        }}
+        }
 
-        .image-info {{
+        .image-info {
             position: absolute;
             bottom: 12px;
             left: 50%;
@@ -538,9 +499,9 @@ def get_html_template(visual_guide=None):
             font-weight: 500;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-        }}
+        }
 
-        .zoom-controls {{
+        .zoom-controls {
             position: absolute;
             top: 12px;
             right: 12px;
@@ -551,9 +512,9 @@ def get_html_template(visual_guide=None):
             border-radius: var(--radius-sm);
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--border-light);
-        }}
+        }
 
-        .zoom-btn {{
+        .zoom-btn {
             width: 28px;
             height: 28px;
             border: none;
@@ -564,44 +525,44 @@ def get_html_template(visual_guide=None):
             font-weight: 500;
             color: var(--text-primary);
             transition: var(--transition);
-        }}
+        }
 
-        .zoom-btn:hover {{
+        .zoom-btn:hover {
             background: var(--bg-tertiary);
-        }}
+        }
 
-        .zoom-label {{
+        .zoom-label {
             min-width: 44px;
             text-align: center;
             font-size: 11px;
             font-weight: 500;
             line-height: 28px;
             color: var(--text-secondary);
-        }}
+        }
 
-        .placeholder {{
+        .placeholder {
             text-align: center;
             color: var(--text-secondary);
             padding: 40px;
-        }}
+        }
 
-        .placeholder-icon {{
+        .placeholder-icon {
             font-size: 40px;
             margin-bottom: 12px;
             opacity: 0.8;
-        }}
+        }
 
-        .placeholder-text {{
+        .placeholder-text {
             font-size: 14px;
             line-height: 1.5;
-        }}
+        }
 
-        .placeholder-text small {{
+        .placeholder-text small {
             color: var(--text-tertiary);
-        }}
+        }
 
         /* Status Panel */
-        .status-panel {{
+        .status-panel {
             position: absolute;
             right: 16px;
             top: 50%;
@@ -610,13 +571,13 @@ def get_html_template(visual_guide=None):
             flex-direction: column;
             gap: 6px;
             z-index: 10;
-        }}
+        }
 
-        .status-panel.hidden {{
+        .status-panel.hidden {
             display: none;
-        }}
+        }
 
-        .status-btn {{
+        .status-btn {
             padding: 10px 16px;
             font-size: 12px;
             font-weight: 600;
@@ -627,47 +588,47 @@ def get_html_template(visual_guide=None):
             min-width: 100px;
             text-align: center;
             letter-spacing: -0.1px;
-        }}
+        }
 
-        .status-btn:disabled {{
+        .status-btn:disabled {
             opacity: 0.3;
             cursor: not-allowed;
-        }}
+        }
 
-        .status-btn.usable {{
+        .status-btn.usable {
             background: var(--status-usable);
             color: var(--status-usable-text);
             border-color: var(--status-usable);
-        }}
+        }
 
-        .status-btn.usable:hover:not(:disabled) {{
+        .status-btn.usable:hover:not(:disabled) {
             background: var(--status-usable-hover);
             border-color: var(--status-usable-hover);
-        }}
+        }
 
-        .status-btn.limited {{
+        .status-btn.limited {
             background: var(--status-limited);
             color: var(--status-limited-text);
             border-color: var(--status-limited);
-        }}
+        }
 
-        .status-btn.limited:hover:not(:disabled) {{
+        .status-btn.limited:hover:not(:disabled) {
             background: var(--status-limited-hover);
             border-color: var(--status-limited-hover);
-        }}
+        }
 
-        .status-btn.unusable {{
+        .status-btn.unusable {
             background: var(--status-unusable);
             color: var(--status-unusable-text);
             border-color: var(--status-unusable);
-        }}
+        }
 
-        .status-btn.unusable:hover:not(:disabled) {{
+        .status-btn.unusable:hover:not(:disabled) {
             background: var(--status-unusable-hover);
             border-color: var(--status-unusable-hover);
-        }}
+        }
 
-        .status-hint {{
+        .status-hint {
             font-size: 10px;
             font-weight: 700;
             opacity: 0.85;
@@ -676,21 +637,21 @@ def get_html_template(visual_guide=None):
             padding: 1px 6px;
             border-radius: 6px;
             display: inline-block;
-        }}
+        }
 
         /* Classification Bar */
-        .classification-bar {{
+        .classification-bar {
             background: var(--bg-secondary);
             border-top: 1px solid var(--border-light);
             padding: 14px 16px;
             flex-shrink: 0;   /* never give up height — the buttons stay on screen */
-        }}
+        }
 
-        .classification-bar.hidden {{
+        .classification-bar.hidden {
             display: none;
-        }}
+        }
 
-        .selection-indicator {{
+        .selection-indicator {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -700,13 +661,13 @@ def get_html_template(visual_guide=None):
             border-radius: var(--radius-sm);
             margin-bottom: 12px;
             font-size: 12px;
-        }}
+        }
 
-        .selection-indicator.hidden {{
+        .selection-indicator.hidden {
             display: none;
-        }}
+        }
 
-        .selection-tag {{
+        .selection-tag {
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -716,57 +677,57 @@ def get_html_template(visual_guide=None):
             border-radius: 10px;
             font-size: 11px;
             font-weight: 600;
-        }}
+        }
 
-        .selection-tag.secondary {{
+        .selection-tag.secondary {
             background: var(--pastel-orange);
-        }}
+        }
 
-        .selection-tag.non-adjacent {{
+        .selection-tag.non-adjacent {
             background: var(--pastel-red);
-        }}
+        }
 
-        .clear-btn {{
+        .clear-btn {
             font-size: 11px;
             color: var(--text-tertiary);
             cursor: pointer;
             padding: 2px 8px;
             border-radius: 4px;
             transition: var(--transition);
-        }}
+        }
 
-        .clear-btn:hover {{
+        .clear-btn:hover {
             background: var(--status-unusable);
             color: var(--status-unusable-text);
-        }}
+        }
 
-        .workflow-stage {{
+        .workflow-stage {
             text-align: center;
             margin-bottom: 10px;
             font-size: 12px;
             color: var(--text-secondary);
             font-weight: 500;
-        }}
+        }
 
-        .workflow-stage .stage-label {{
+        .workflow-stage .stage-label {
             background: var(--pastel-purple);
             padding: 4px 12px;
             border-radius: 12px;
             color: var(--text-primary);
-        }}
+        }
 
-        .button-row {{
+        .button-row {
             display: flex;
             gap: 6px;
             justify-content: center;
             margin-bottom: 8px;
-        }}
+        }
 
-        .button-row:last-child {{
+        .button-row:last-child {
             margin-bottom: 0;
-        }}
+        }
 
-        .class-btn {{
+        .class-btn {
             flex: 1;
             max-width: 130px;
             padding: 12px 8px;
@@ -784,33 +745,24 @@ def get_html_template(visual_guide=None):
             align-items: center;
             gap: 4px;
             letter-spacing: -0.1px;
-        }}
+        }
 
-        .class-btn:hover:not(:disabled) {{
+        .class-btn:hover:not(:disabled) {
             border-color: var(--pastel-blue);
             background: var(--bg-card);
-        }}
+        }
 
-        .class-btn:disabled {{
+        .class-btn:disabled {
             opacity: 0.25;
             cursor: not-allowed;
-        }}
+        }
 
-        .class-btn.selected {{
+        .class-btn.selected {
             background: var(--pastel-blue);
             border-color: var(--accent-hover);
-        }}
+        }
 
-        .class-btn.adjacent {{
-            border-color: var(--pastel-orange);
-            background: var(--bg-card);
-        }}
-
-        .class-btn.adjacent:hover:not(:disabled) {{
-            background: var(--pastel-yellow);
-        }}
-
-        .class-btn .key-hint {{
+        .class-btn .key-hint {
             order: -1;              /* sit above the label, never overlap it */
             font-size: 13px;
             color: #fff;
@@ -824,14 +776,14 @@ def get_html_template(visual_guide=None):
             justify-content: center;
             border-radius: 6px;
             box-shadow: var(--shadow-sm);
-        }}
+        }
 
-        .class-btn.selected .key-hint {{
+        .class-btn.selected .key-hint {
             background: var(--text-primary);
             color: #fff;
-        }}
+        }
 
-        .class-btn .count-badge {{
+        .class-btn .count-badge {
             font-size: 11px;
             font-weight: 700;
             color: var(--text-secondary);
@@ -839,27 +791,27 @@ def get_html_template(visual_guide=None):
             padding: 2px 8px;
             border-radius: 8px;
             min-width: 22px;
-        }}
+        }
 
-        .class-btn .count-badge.has-items {{
+        .class-btn .count-badge.has-items {
             background: var(--pastel-green);
             color: var(--status-usable-text);
-        }}
+        }
 
-        .class-btn .pct-badge {{
+        .class-btn .pct-badge {
             margin-left: 5px;
             font-size: 10px;
             font-weight: 700;
             opacity: 0.7;
-        }}
+        }
 
-        .class-btn.selected .count-badge {{
+        .class-btn.selected .count-badge {
             background: rgba(0,0,0,0.1);
             color: var(--text-primary);
-        }}
+        }
 
         /* Alternative Selection Panel */
-        .alternative-panel {{
+        .alternative-panel {
             display: flex;
             gap: 8px;
             justify-content: center;
@@ -868,13 +820,13 @@ def get_html_template(visual_guide=None):
             background: var(--bg-tertiary);
             border-radius: var(--radius-md);
             margin-bottom: 12px;
-        }}
+        }
 
-        .alternative-panel.hidden {{
+        .alternative-panel.hidden {
             display: none;
-        }}
+        }
 
-        .alternative-btn {{
+        .alternative-btn {
             padding: 10px 16px;
             font-size: 12px;
             font-weight: 600;
@@ -884,37 +836,37 @@ def get_html_template(visual_guide=None):
             color: var(--text-primary);
             cursor: pointer;
             transition: var(--transition);
-        }}
+        }
 
-        .alternative-btn:hover:not(:disabled) {{
+        .alternative-btn:hover:not(:disabled) {
             border-color: var(--pastel-orange);
             background: var(--pastel-yellow);
-        }}
+        }
 
-        .alternative-btn:disabled {{
-            opacity: 0.3;
-            cursor: not-allowed;
-        }}
+        /* The expected next/previous stage — highlighted so the common answer is obvious. */
+        .alternative-btn.adjacent-option {
+            border-color: var(--pastel-orange);
+        }
 
-        .alternative-btn.no-alt {{
+        .alternative-btn.no-alt {
             background: var(--pastel-teal);
             border-color: var(--pastel-teal);
-        }}
+        }
 
-        .alternative-btn.no-alt:hover:not(:disabled) {{
+        .alternative-btn.no-alt:hover:not(:disabled) {
             background: var(--pastel-green);
             border-color: var(--pastel-green);
-        }}
+        }
 
-        .alternative-btn .key-hint {{
+        .alternative-btn .key-hint {
             font-size: 9px;
             color: var(--text-tertiary);
             display: block;
             margin-top: 2px;
-        }}
+        }
 
         /* Toast */
-        .toast {{
+        .toast {
             position: fixed;
             bottom: 100px;
             left: 50%;
@@ -929,107 +881,35 @@ def get_html_template(visual_guide=None):
             transition: all 0.3s ease;
             z-index: 1000;
             pointer-events: none;
-        }}
+        }
 
-        .toast.visible {{
+        .toast.visible {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
-        }}
+        }
 
-        .toast.error {{
+        .toast.error {
             background: var(--status-unusable-text);
-        }}
-
-        /* Lightbox */
-        .lightbox {{
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            cursor: zoom-out;
-        }}
-
-        .lightbox.visible {{
-            display: flex;
-        }}
-
-        .lightbox img {{
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: var(--radius-md);
-        }}
-
-        /* Unsaved Changes Modal */
-        .modal-overlay {{
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }}
-
-        .modal-overlay.visible {{
-            display: flex;
-        }}
-
-        .modal {{
-            background: var(--bg-secondary);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: var(--shadow-lg);
-        }}
-
-        .modal-title {{
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--text-primary);
-        }}
-
-        .modal-text {{
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }}
-
-        .modal-actions {{
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }}
+        }
 
         /* File Input Hidden */
-        input[type="file"] {{
+        input[type="file"] {
             display: none;
-        }}
+        }
 
         /* Responsive */
-        @media (max-width: 900px) {{
-            .sidebar {{
+        @media (max-width: 900px) {
+            .sidebar {
                 width: 280px;
-            }}
+            }
 
-            .class-btn {{
+            .class-btn {
                 padding: 10px 6px;
                 font-size: 10px;
                 max-width: 110px;
-            }}
+            }
 
-            .status-panel {{
+            .status-panel {
                 position: static;
                 transform: none;
                 flex-direction: row;
@@ -1037,33 +917,11 @@ def get_html_template(visual_guide=None):
                 padding: 10px;
                 background: var(--bg-secondary);
                 border-bottom: 1px solid var(--border-light);
-            }}
-        }}
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Lightbox -->
-    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-        <img id="lightbox-img" src="" alt="Preview">
-    </div>
-
-    <!-- Unsaved Changes Modal -->
-    <div class="modal-overlay" id="unsaved-modal">
-        <div class="modal">
-            <div class="modal-title">⚠️ Unsaved Changes</div>
-            <div class="modal-text">
-                You have unsorted images remaining. Your progress will be lost if you leave without saving.
-                <br><br>
-                Would you like to save your progress before leaving?
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="dismissModal()">Stay</button>
-                <button class="btn btn-danger" onclick="leaveWithoutSaving()">Leave Anyway</button>
-                <button class="btn btn-success" onclick="saveAndLeave()">Save & Leave</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Header -->
     <header class="header">
         <div class="header-left">
@@ -1145,7 +1003,9 @@ def get_html_template(visual_guide=None):
                 <!-- Visual Guide -->
                 <div class="sidebar-section">
                     <div class="sidebar-title">Visual Guide</div>
-                    {visual_guide_html}
+                    <a href="{{ url_for('static', filename='visual_guide.png') }}" target="_blank" rel="noopener">
+                        <img class="guide-image" src="{{ url_for('static', filename='visual_guide.png') }}" alt="Visual Guide">
+                    </a>
                 </div>
 
                 <!-- Cue Table -->
@@ -1266,7 +1126,7 @@ def get_html_template(visual_guide=None):
 
                     <div class="zoom-controls" id="zoom-controls" style="display: none;">
                         <button class="zoom-btn" onclick="zoomOut()">−</button>
-                        <span class="zoom-label" id="zoom-label">{default_zoom_percent}%</span>
+                        <span class="zoom-label" id="zoom-label">{{ (cfg.defaultZoom * 100) | int }}%</span>
                         <button class="zoom-btn" onclick="zoomIn()">+</button>
                         <button class="zoom-btn" onclick="resetZoom()">↺</button>
                     </div>
@@ -1305,7 +1165,7 @@ def get_html_template(visual_guide=None):
                     <span style="color: var(--text-secondary);">Selected:</span>
                     <span class="selection-tag" id="first-label-tag"></span>
                     <span class="selection-tag secondary" id="second-label-tag" style="display: none;"></span>
-                    <span class="adjacency-warning" id="adjacency-warning" style="display: none; color: var(--status-unusable-text); font-size: 11px;">⚠️ Non-adjacent</span>
+                    <span id="adjacency-warning" style="display: none; color: var(--status-unusable-text); font-size: 11px;">⚠️ Non-adjacent</span>
                     <span class="clear-btn" onclick="clearSelection()">Clear</span>
                 </div>
 
@@ -1313,74 +1173,24 @@ def get_html_template(visual_guide=None):
                 <div class="alternative-panel hidden" id="alternative-panel">
                     <span style="color: var(--text-secondary); font-size: 12px;">Select alternative or:</span>
                     <div id="adjacent-buttons"></div>
-                    <button class="alternative-btn no-alt" id="no-alternative-btn" onclick="selectAlternative('none')">
+                    <button class="alternative-btn no-alt" onclick="selectAlternative('none')">
                         No Alternative
                         <span class="key-hint">Enter · same key</span>
                     </button>
                 </div>
 
-                <!-- Row 1: Asexual Stages -->
-                <div class="button-row" id="row-1">
-                    <button class="class-btn" data-key="1" onclick="selectLabel('1')">
-                        Early Ring
-                        <span class="key-hint">1</span>
-                        <span class="count-badge" id="count-1">0</span>
+                <!-- Row 1: Asexual Stages / Row 2: Other Classes -->
+                {% for row in [['1', '2', '3', '4', '5'], ['6', '7', '8', '9', '0', '-']] %}
+                <div class="button-row">
+                    {% for key in row %}
+                    <button class="class-btn" data-key="{{ key }}" onclick="selectLabel('{{ key }}')">
+                        {{ cfg.classMap[key] }}
+                        <span class="key-hint">{{ key }}</span>
+                        <span class="count-badge" id="count-{{ key }}">0</span>
                     </button>
-                    <button class="class-btn" data-key="2" onclick="selectLabel('2')">
-                        Middle Ring
-                        <span class="key-hint">2</span>
-                        <span class="count-badge" id="count-2">0</span>
-                    </button>
-                    <button class="class-btn" data-key="3" onclick="selectLabel('3')">
-                        Late Ring
-                        <span class="key-hint">3</span>
-                        <span class="count-badge" id="count-3">0</span>
-                    </button>
-                    <button class="class-btn" data-key="4" onclick="selectLabel('4')">
-                        Trophozoite
-                        <span class="key-hint">4</span>
-                        <span class="count-badge" id="count-4">0</span>
-                    </button>
-                    <button class="class-btn" data-key="5" onclick="selectLabel('5')">
-                        Schizont
-                        <span class="key-hint">5</span>
-                        <span class="count-badge" id="count-5">0</span>
-                    </button>
+                    {% endfor %}
                 </div>
-
-                <!-- Row 2: Other Classes -->
-                <div class="button-row" id="row-2">
-                    <button class="class-btn" data-key="6" onclick="selectLabel('6')">
-                        Gametocyte
-                        <span class="key-hint">6</span>
-                        <span class="count-badge" id="count-6">0</span>
-                    </button>
-                    <button class="class-btn" data-key="7" onclick="selectLabel('7')">
-                        Merozoite
-                        <span class="key-hint">7</span>
-                        <span class="count-badge" id="count-7">0</span>
-                    </button>
-                    <button class="class-btn" data-key="8" onclick="selectLabel('8')">
-                        Other Artefact
-                        <span class="key-hint">8</span>
-                        <span class="count-badge" id="count-8">0</span>
-                    </button>
-                    <button class="class-btn" data-key="9" onclick="selectLabel('9')">
-                        Platelet
-                        <span class="key-hint">9</span>
-                        <span class="count-badge" id="count-9">0</span>
-                    </button>
-                    <button class="class-btn" data-key="0" onclick="selectLabel('0')">
-                        Uninfected
-                        <span class="key-hint">0</span>
-                        <span class="count-badge" id="count-0">0</span>
-                    </button>
-                    <button class="class-btn" data-key="-" onclick="selectLabel('-')">
-                        Cannot Determine
-                        <span class="key-hint">-</span>
-                        <span class="count-badge" id="count--">0</span>
-                    </button>
-                </div>
+                {% endfor %}
             </div>
         </main>
     </div>
@@ -1390,59 +1200,38 @@ def get_html_template(visual_guide=None):
 
     <script>
         // =====================================================================
-        // CONFIGURATION
+        // CONFIGURATION — injected from config.py, never hand-copied.
         // =====================================================================
-        const CLASS_MAP = {{
-            '1': 'Early Ring',
-            '2': 'Middle Ring',
-            '3': 'Late Ring',
-            '4': 'Trophozoite',
-            '5': 'Schizont',
-            '6': 'Gametocyte',
-            '7': 'Merozoite',
-            '8': 'Other Artefact',
-            '9': 'Platelet',
-            '0': 'Uninfected',
-            '-': 'Cannot Determine'
-        }};
+        const CFG = {{ cfg | tojson }};
 
-        const FIRST_ROW = ['1', '2', '3', '4', '5'];
-        const SECOND_ROW = ['6', '7', '8', '9', '0', '-'];
-        const AUTO_ADVANCE = ['0'];              // Uninfected: instant Usable
-        const NON_ALTERNATIVE = ['0', '-'];      // never offered as an alternative label
-
-        const ADJACENCY = {{
-            '1': ['2'],
-            '2': ['1', '3'],
-            '3': ['2', '4'],
-            '4': ['3', '5'],
-            '5': ['4']
-        }};
-
-        const DEFAULT_ZOOM = {DEFAULT_ZOOM};
+        // Quick class shortcuts: pure keybindings, no server counterpart.
+        const QUICK_KEYS = { q: '9', w: '0', e: '-' };
 
         // =====================================================================
         // STATE
         // =====================================================================
-        let state = {{
+        let state = {
             uploadComplete: false,
             currentImage: null,
             remainingCount: 0,
             historyCount: 0,
             redoCount: 0,
-            sortedCounts: {{}},
+            sortedCounts: {},
             totalSorted: 0,
-            currentSelection: {{
-                first_label: null,
-                second_label: null,
-                awaiting_alternative: false,
-                awaiting_status: false
-            }}
-        }};
+            lastTime: 0,
+            avgTime: 0
+        };
 
-        let zoom = DEFAULT_ZOOM;
+        // The selection flow lives entirely here: 'class' -> 'alt' -> 'status',
+        // then one POST /classify with the finished triple.
+        let sel = { first: null, second: null, step: 'class' };
+
+        function resetSelection() {
+            sel = { first: null, second: null, step: 'class' };
+        }
+
+        let zoom = CFG.defaultZoom;
         let sidebarWidth = 320;
-        let pendingLeave = null;
 
         // =====================================================================
         // PER-IMAGE TIMER
@@ -1454,163 +1243,122 @@ def get_html_template(visual_guide=None):
         let timerStart = 0;          // Date.now() when timing began
         let timerInterval = null;
 
-        function fmtTime(sec) {{
+        function fmtTime(sec) {
             sec = Math.max(0, Math.round(sec));
-            const m = Math.floor(sec / 60);
-            const s = sec % 60;
-            return m + ':' + String(s).padStart(2, '0');
-        }}
+            return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+        }
 
-        function elapsedSeconds() {{
+        function elapsedSeconds() {
             return Math.min(Date.now() - timerStart, TIMER_CAP_MS) / 1000;
-        }}
+        }
 
-        function tickTimer() {{
+        function tickTimer() {
             const ms = Date.now() - timerStart;
-            if (ms >= TIMER_CAP_MS) {{
+            if (ms >= TIMER_CAP_MS) {
                 clearInterval(timerInterval);   // pause: likely stepped away
                 timerInterval = null;
-            }}
+            }
             document.getElementById('time-current').textContent = fmtTime(Math.min(ms, TIMER_CAP_MS) / 1000);
-        }}
+        }
 
-        function startImageTimer(imageName) {{
+        function startImageTimer(imageName) {
             if (timerInterval) clearInterval(timerInterval);
             timerImage = imageName;
             timerStart = Date.now();
             document.getElementById('time-current').textContent = '0:00';
             timerInterval = setInterval(tickTimer, 1000);
-        }}
+        }
 
-        function stopImageTimer() {{
+        function stopImageTimer() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = null;
             timerImage = null;
             document.getElementById('time-current').textContent = '0:00';
-        }}
-
-        // =====================================================================
-        // UNSAVED CHANGES DETECTION
-        // =====================================================================
-        function hasUnsavedChanges() {{
-            return state.uploadComplete && state.remainingCount > 0 && state.totalSorted > 0;
-        }}
-
-        window.addEventListener('beforeunload', function(e) {{
-            if (hasUnsavedChanges()) {{
-                e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                return e.returnValue;
-            }}
-        }});
-
-        function showUnsavedModal(callback) {{
-            pendingLeave = callback;
-            document.getElementById('unsaved-modal').classList.add('visible');
-        }}
-
-        function dismissModal() {{
-            document.getElementById('unsaved-modal').classList.remove('visible');
-            pendingLeave = null;
-        }}
-
-        function leaveWithoutSaving() {{
-            document.getElementById('unsaved-modal').classList.remove('visible');
-            if (pendingLeave) {{
-                pendingLeave();
-            }}
-        }}
-
-        function saveAndLeave() {{
-            saveProgress();
-            document.getElementById('unsaved-modal').classList.remove('visible');
-            showToast('Progress saved! You can now leave safely.');
-        }}
+        }
 
         // =====================================================================
         // UI HELPERS
         // =====================================================================
-        function showToast(message, isError = false) {{
+        function hasUnsavedChanges() {
+            return state.uploadComplete && state.remainingCount > 0 && state.totalSorted > 0;
+        }
+
+        window.addEventListener('beforeunload', (e) => {
+            if (hasUnsavedChanges()) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
+        function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = isError ? 'toast error visible' : 'toast visible';
             setTimeout(() => toast.className = 'toast', 2500);
-        }}
+        }
 
-        function openLightbox(src) {{
-            document.getElementById('lightbox-img').src = src;
-            document.getElementById('lightbox').classList.add('visible');
-        }}
-
-        function closeLightbox() {{
-            document.getElementById('lightbox').classList.remove('visible');
-        }}
-
-        function updateUI() {{
-            const uploadComplete = state.uploadComplete;
+        function updateUI() {
             const hasImage = state.currentImage !== null;
             const hasSorted = state.totalSorted > 0;
-            const hasHistory = state.historyCount > 0;
-            const sel = state.currentSelection;
 
             // Header visibility
-            document.getElementById('header-actions').classList.toggle('hidden', !uploadComplete);
-            document.getElementById('progress-display').classList.toggle('hidden', !uploadComplete);
-            document.getElementById('time-display').classList.toggle('hidden', !uploadComplete);
+            document.getElementById('header-actions').classList.toggle('hidden', !state.uploadComplete);
+            document.getElementById('progress-display').classList.toggle('hidden', !state.uploadComplete);
+            document.getElementById('time-display').classList.toggle('hidden', !state.uploadComplete);
 
             // Per-image timer: restart on a new image, stop when none left.
-            document.getElementById('time-last').textContent = fmtTime(state.lastTime || 0);
-            document.getElementById('time-avg').textContent = fmtTime(state.avgTime || 0);
-            if (uploadComplete && hasImage) {{
+            document.getElementById('time-last').textContent = fmtTime(state.lastTime);
+            document.getElementById('time-avg').textContent = fmtTime(state.avgTime);
+            if (state.uploadComplete && hasImage) {
                 if (state.currentImage !== timerImage) startImageTimer(state.currentImage);
-            }} else if (timerImage !== null) {{
+            } else if (timerImage !== null) {
                 stopImageTimer();
-            }}
-            
+            }
+
             // Button states
-            document.getElementById('undo-btn').disabled = !hasHistory;
-            document.getElementById('redo-btn').disabled = !(state.redoCount > 0);
-            document.getElementById('flag-btn').disabled = !(uploadComplete && hasImage);
+            document.getElementById('undo-btn').disabled = state.historyCount === 0;
+            document.getElementById('redo-btn').disabled = state.redoCount === 0;
+            document.getElementById('flag-btn').disabled = !(state.uploadComplete && hasImage);
             document.getElementById('save-btn').disabled = !hasSorted;
-            document.getElementById('load-btn').disabled = !uploadComplete;
+            document.getElementById('load-btn').disabled = !state.uploadComplete;
             document.getElementById('download-btn').disabled = !hasSorted;
 
             // Progress stats
             document.getElementById('remaining-count').textContent = state.remainingCount;
             document.getElementById('sorted-count').textContent = state.totalSorted;
 
-            // Progress bar
             const total = state.remainingCount + state.totalSorted;
             const pct = total > 0 ? Math.round((state.totalSorted / total) * 100) : 0;
             document.getElementById('progress-fill').style.width = pct + '%';
 
-            // Update count badges on buttons
             updateCountBadges();
+            updateImageViewer(hasImage);
 
-            // Image viewer
+            document.getElementById('classification-bar').classList.toggle('hidden', !state.uploadComplete || !hasImage);
+            document.getElementById('status-panel').classList.toggle('hidden', !hasImage || sel.step !== 'status');
+
+            updateButtonStates();
+            updateWorkflowStage();
+        }
+
+        function updateImageViewer(hasImage) {
             const placeholder = document.getElementById('placeholder');
-            const imageContainer = document.getElementById('image-container');
-            const zoomControls = document.getElementById('zoom-controls');
-            const imageInfo = document.getElementById('image-info');
+            const showImage = state.uploadComplete && hasImage;
 
-            if (!uploadComplete) {{
-                placeholder.style.display = 'block';
-                imageContainer.style.display = 'none';
-                zoomControls.style.display = 'none';
-                imageInfo.style.display = 'none';
-            }} else if (hasImage) {{
-                placeholder.style.display = 'none';
-                imageContainer.style.display = 'flex';
-                zoomControls.style.display = 'flex';
-                imageInfo.style.display = 'block';
-                
-                const img = document.getElementById('current-image');
-                img.src = `/serve_image/${{encodeURIComponent(state.currentImage)}}?t=${{Date.now()}}`;
+            placeholder.style.display = showImage ? 'none' : 'block';
+            document.getElementById('image-container').style.display = showImage ? 'flex' : 'none';
+            document.getElementById('zoom-controls').style.display = showImage ? 'flex' : 'none';
+            document.getElementById('image-info').style.display = showImage ? 'block' : 'none';
+
+            if (showImage) {
+                document.getElementById('current-image').src =
+                    `/serve_image/${encodeURIComponent(state.currentImage)}?t=${Date.now()}`;
                 // Show the real name, not the internal ~flag~ alias.
-                const shown = state.currentImage.replace(/^~flag~\\d+~/, '');
+                const shown = state.currentImage.replace(/^~flag~\d+~/, '');
                 document.getElementById('filename-display').textContent =
                     shown === state.currentImage ? shown : '🚩 ' + shown;
-            }} else {{
+            } else if (state.uploadComplete) {
                 placeholder.innerHTML = `
                     <div class="placeholder-icon">🎉</div>
                     <div class="placeholder-text">
@@ -1618,174 +1366,108 @@ def get_html_template(visual_guide=None):
                         <small>Click Download to get results</small>
                     </div>
                 `;
-                placeholder.style.display = 'block';
-                imageContainer.style.display = 'none';
-                zoomControls.style.display = 'none';
-                imageInfo.style.display = 'none';
-            }}
+            }
+        }
 
-            // Classification bar
-            document.getElementById('classification-bar').classList.toggle('hidden', !uploadComplete || !hasImage);
-            
-            // Status panel - only show when awaiting status
-            document.getElementById('status-panel').classList.toggle('hidden', !uploadComplete || !hasImage || !sel.awaiting_status);
-
-            // Update button states and workflow
-            updateButtonStates();
-            updateWorkflowStage();
-        }}
-
-        function updateCountBadges() {{
-            for (const [key, name] of Object.entries(CLASS_MAP)) {{
-                const counts = state.sortedCounts[name] || {{ total: 0 }};
-                const count = counts.total || 0;
+        function updateCountBadges() {
+            for (const key of Object.keys(CFG.classMap)) {
+                const count = state.sortedCounts[CFG.classMap[key]] || 0;
                 const badge = document.getElementById('count-' + key);
+                if (!badge) continue;
 
-                if (badge) {{
-                    // Count plus its share of all classified images (rounded to a whole %).
-                    const pct = state.totalSorted > 0 ? Math.round(count / state.totalSorted * 100) : 0;
-                    badge.innerHTML = count + '<span class="pct-badge">' + pct + '%</span>';
-                    badge.classList.toggle('has-items', count > 0);
-                }}
-            }}
-        }}
+                // Count plus its share of all classified images (rounded to a whole %).
+                const pct = state.totalSorted > 0 ? Math.round(count / state.totalSorted * 100) : 0;
+                badge.innerHTML = count + '<span class="pct-badge">' + pct + '%</span>';
+                badge.classList.toggle('has-items', count > 0);
+            }
+        }
 
-        function updateWorkflowStage() {{
-            const sel = state.currentSelection;
+        function updateWorkflowStage() {
             const stageEl = document.getElementById('workflow-stage');
-            const stageLabel = document.getElementById('stage-label');
             const altPanel = document.getElementById('alternative-panel');
 
-            if (!state.currentImage) {{
+            if (!state.currentImage) {
                 stageEl.classList.add('hidden');
                 altPanel.classList.add('hidden');
                 return;
-            }}
+            }
 
             stageEl.classList.remove('hidden');
+            altPanel.classList.toggle('hidden', sel.step !== 'alt');
 
-            if (sel.awaiting_status) {{
-                stageLabel.textContent = 'Step 3: Select image quality (ULU)';
-                altPanel.classList.add('hidden');
-            }} else if (sel.awaiting_alternative) {{
-                stageLabel.textContent = 'Step 2: Select alternative or confirm';
-                altPanel.classList.remove('hidden');
-                updateAlternativeButtons();
-            }} else {{
-                stageLabel.textContent = 'Step 1: Select a class';
-                altPanel.classList.add('hidden');
-            }}
-        }}
+            const labels = {
+                'class': 'Step 1: Select a class',
+                'alt': 'Step 2: Select alternative or confirm',
+                'status': 'Step 3: Select image quality (ULU)'
+            };
+            document.getElementById('stage-label').textContent = labels[sel.step];
 
-        function updateAlternativeButtons() {{
-            const sel = state.currentSelection;
+            if (sel.step === 'alt') updateAlternativeButtons();
+        }
+
+        function updateAlternativeButtons() {
             const container = document.getElementById('adjacent-buttons');
             container.innerHTML = '';
+            if (!sel.first) return;
 
-            if (!sel.first_label) return;
+            const adjacent = CFG.adjacency[sel.first] || [];
 
-            // Get all class buttons for selection as alternative
-            const allKeys = [...FIRST_ROW, ...SECOND_ROW].filter(k => k !== sel.first_label && !NON_ALTERNATIVE.includes(k));
-            const adjacent = ADJACENCY[sel.first_label] || [];
+            Object.keys(CFG.classMap)
+                .filter(k => k !== sel.first && !CFG.notOfferedAsAlternative.includes(k))
+                .forEach(key => {
+                    const btn = document.createElement('button');
+                    btn.className = 'alternative-btn' + (adjacent.includes(key) ? ' adjacent-option' : '');
+                    btn.innerHTML = `${CFG.classMap[key]}<span class="key-hint">${key}</span>`;
+                    btn.onclick = () => selectAlternative(key);
+                    container.appendChild(btn);
+                });
+        }
 
-            allKeys.forEach(key => {{
-                const btn = document.createElement('button');
-                btn.className = 'alternative-btn';
-                if (adjacent.includes(key)) {{
-                    btn.classList.add('adjacent-option');
-                    btn.style.borderColor = 'var(--pastel-orange)';
-                }}
-                btn.innerHTML = `${{CLASS_MAP[key]}}<span class="key-hint">${{key}}</span>`;
-                btn.onclick = () => selectAlternative(key);
-                container.appendChild(btn);
-            }});
-        }}
+        function updateButtonStates() {
+            // Class buttons are live only during step 1.
+            document.querySelectorAll('.class-btn').forEach(btn => {
+                btn.classList.toggle('selected', sel.first === btn.dataset.key);
+                btn.disabled = !state.currentImage || sel.step !== 'class';
+            });
 
-        function updateButtonStates() {{
-            const sel = state.currentSelection;
-            const firstLabel = sel.first_label;
-            const secondLabel = sel.second_label;
+            ['status-usable', 'status-limited', 'status-unusable'].forEach(id => {
+                document.getElementById(id).disabled = sel.step !== 'status';
+            });
 
-            // Update all class buttons
-            document.querySelectorAll('.class-btn').forEach(btn => {{
-                const key = btn.dataset.key;
-                
-                btn.classList.remove('selected', 'adjacent');
-                btn.disabled = false;
-
-                if (!state.currentImage) {{
-                    btn.disabled = true;
-                    return;
-                }}
-
-                // If awaiting alternative or status, disable class buttons
-                if (sel.awaiting_alternative || sel.awaiting_status) {{
-                    btn.disabled = true;
-                    if (firstLabel === key) {{
-                        btn.classList.add('selected');
-                    }}
-                    return;
-                }}
-
-                if (firstLabel === key) {{
-                    btn.classList.add('selected');
-                }}
-            }});
-
-            // Update status buttons - only enabled when awaiting status
-            const statusBtns = ['status-usable', 'status-limited', 'status-unusable'];
-            statusBtns.forEach(id => {{
-                document.getElementById(id).disabled = !sel.awaiting_status;
-            }});
-
-            // Update selection indicator
+            // Selection indicator
             const indicator = document.getElementById('selection-indicator');
-            const firstTag = document.getElementById('first-label-tag');
-            const secondTag = document.getElementById('second-label-tag');
-            const adjacencyWarning = document.getElementById('adjacency-warning');
+            indicator.classList.toggle('hidden', !sel.first);
+            if (!sel.first) return;
 
-            if (firstLabel) {{
-                indicator.classList.remove('hidden');
-                firstTag.textContent = CLASS_MAP[firstLabel];
-                
-                if (secondLabel) {{
-                    secondTag.textContent = CLASS_MAP[secondLabel];
-                    secondTag.style.display = 'inline-flex';
-                    
-                    // Check if adjacent
-                    const adjacent = ADJACENCY[firstLabel] || [];
-                    if (!adjacent.includes(secondLabel)) {{
-                        secondTag.classList.add('non-adjacent');
-                        adjacencyWarning.style.display = 'inline';
-                    }} else {{
-                        secondTag.classList.remove('non-adjacent');
-                        adjacencyWarning.style.display = 'none';
-                    }}
-                }} else {{
-                    secondTag.style.display = 'none';
-                    adjacencyWarning.style.display = 'none';
-                }}
-            }} else {{
-                indicator.classList.add('hidden');
-            }}
-        }}
+            document.getElementById('first-label-tag').textContent = CFG.classMap[sel.first];
+
+            const secondTag = document.getElementById('second-label-tag');
+            const warning = document.getElementById('adjacency-warning');
+            const isAdjacent = (CFG.adjacency[sel.first] || []).includes(sel.second);
+
+            secondTag.style.display = sel.second ? 'inline-flex' : 'none';
+            warning.style.display = sel.second && !isAdjacent ? 'inline' : 'none';
+
+            if (sel.second) {
+                secondTag.textContent = CFG.classMap[sel.second];
+                secondTag.classList.toggle('non-adjacent', !isAdjacent);
+            }
+        }
 
         // =====================================================================
         // ZOOM
         // =====================================================================
-        function setZoom(newZoom) {{
+        function setZoom(newZoom) {
             zoom = Math.max(0.25, Math.min(4, newZoom));
             // Scale the image within the fixed white card.
             const img = document.getElementById('current-image');
-            if (img) {{
-                img.style.transform = `scale(${{zoom}})`;
-            }}
+            if (img) img.style.transform = `scale(${zoom})`;
             document.getElementById('zoom-label').textContent = Math.round(zoom * 100) + '%';
-        }}
+        }
 
-        function zoomIn() {{ setZoom(zoom + 0.25); }}
-        function zoomOut() {{ setZoom(zoom - 0.25); }}
-        function resetZoom() {{ setZoom(DEFAULT_ZOOM); }}
+        function zoomIn() { setZoom(zoom + 0.25); }
+        function zoomOut() { setZoom(zoom - 0.25); }
+        function resetZoom() { setZoom(CFG.defaultZoom); }
 
         // =====================================================================
         // SIDEBAR
@@ -1793,520 +1475,310 @@ def get_html_template(visual_guide=None):
         // Single source of truth for sidebar width. Collapsing CLEARS the inline
         // width so the .collapsed rule (width:0) actually wins — otherwise an inline
         // width left over from a drag overrides it and the sidebar never collapses.
-        function applySidebarWidth(w) {{
+        function applySidebarWidth(w) {
             const sidebar = document.getElementById('sidebar');
             const toggle = document.getElementById('sidebar-toggle');
             const icon = document.getElementById('toggle-icon');
 
-            if (w <= 40) {{
+            if (w <= 40) {
                 sidebar.classList.add('collapsed');
                 sidebar.style.width = '';
                 toggle.style.left = '0';
                 icon.textContent = '›';
-            }} else {{
+            } else {
                 sidebar.classList.remove('collapsed');
                 sidebar.style.width = w + 'px';
                 toggle.style.left = w + 'px';
                 icon.textContent = '‹';
                 sidebarWidth = w;   // remember last expanded width for reopen
-            }}
-        }}
+            }
+        }
 
-        function toggleSidebar() {{
+        function toggleSidebar() {
             const collapsed = document.getElementById('sidebar').classList.contains('collapsed');
             applySidebarWidth(collapsed ? (sidebarWidth || 320) : 0);
-        }}
+        }
 
-        // Sidebar resize
-        (function initSidebarResize() {{
+        (function initSidebarResize() {
             const sidebar = document.getElementById('sidebar');
-            const resizer = document.getElementById('sidebar-resize');
-
             let isResizing = false;
 
-            resizer.addEventListener('mousedown', (e) => {{
+            document.getElementById('sidebar-resize').addEventListener('mousedown', (e) => {
                 isResizing = true;
                 sidebar.style.transition = 'none';   // no easing lag while dragging
                 document.body.style.cursor = 'ew-resize';
                 document.body.style.userSelect = 'none';
                 e.preventDefault();
-            }});
+            });
 
-            document.addEventListener('mousemove', (e) => {{
-                if (!isResizing) return;
-                applySidebarWidth(Math.max(0, Math.min(450, e.clientX)));
-            }});
+            document.addEventListener('mousemove', (e) => {
+                if (isResizing) applySidebarWidth(Math.max(0, Math.min(450, e.clientX)));
+            });
 
-            document.addEventListener('mouseup', () => {{
+            document.addEventListener('mouseup', () => {
                 if (!isResizing) return;
                 isResizing = false;
                 sidebar.style.transition = '';
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
-            }});
-        }})();
+            });
+        })();
+
+        // =====================================================================
+        // SELECTION FLOW (client-side; the server only sees the finished triple)
+        // =====================================================================
+        function selectLabel(key) {
+            if (!state.currentImage || sel.step !== 'class' || !(key in CFG.classMap)) return;
+
+            // Uninfected goes straight through without ever entering a selection state,
+            // so a failed request leaves nothing half-selected behind.
+            if (CFG.autoAdvance.includes(key)) {
+                classify(key, null, 'Usable');
+                return;
+            }
+
+            sel = { first: key, second: null, step: CFG.skipAlternative.includes(key) ? 'status' : 'alt' };
+            updateUI();
+        }
+
+        function selectAlternative(key) {
+            if (sel.step !== 'alt') return;
+            sel.second = key === 'none' ? null : key;
+            sel.step = 'status';
+            updateUI();
+        }
+
+        function finalizeWithStatus(status) {
+            if (sel.step !== 'status') {
+                showToast('Select a class first', true);
+                return;
+            }
+            classify(sel.first, sel.second, status);
+        }
+
+        function clearSelection() {
+            resetSelection();
+            updateUI();
+        }
+
+        // Backspace steps back through the current selection before touching the
+        // previous image: status -> alternative -> class -> (nothing) -> undo.
+        function stepBack() {
+            if (sel.step === 'status' && !CFG.skipAlternative.includes(sel.first)) {
+                sel.second = null;
+                sel.step = 'alt';
+                updateUI();
+            } else if (sel.first) {
+                clearSelection();
+            } else {
+                executeUndo();
+            }
+        }
 
         // =====================================================================
         // API CALLS
         // =====================================================================
-        function applyState(data) {{
+        function applyState(data) {
             state.currentImage = data.current_image;
             state.remainingCount = data.remaining_count;
             state.historyCount = data.history_count;
-            state.redoCount = data.redo_count || 0;
+            state.redoCount = data.redo_count;
             state.sortedCounts = data.sorted_counts;
             state.totalSorted = data.total_sorted;
-            state.lastTime = data.last_time || 0;
-            state.avgTime = data.avg_time || 0;
-            if (data.current_selection !== undefined) {{
-                state.currentSelection = data.current_selection;
-            }}
-        }}
+            state.lastTime = data.last_time;
+            state.avgTime = data.avg_time;
+            resetSelection();   // the queue moved; any half-made selection is stale
+        }
 
-        async function fetchState() {{
-            try {{
-                const res = await fetch('/state');
+        // Every queue-changing endpoint returns the same state payload, so they
+        // all land here.
+        async function post(url, body) {
+            try {
+                const res = await fetch(url, body ? {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                } : { method: 'POST' });
+
                 const data = await res.json();
+                if (!data.success) {
+                    showToast(data.message, true);
+                    return;
+                }
 
+                showToast(data.message);
+                applyState(data);
+                updateUI();
+            } catch (e) {
+                showToast('Request failed', true);
+            }
+        }
+
+        function classify(first, second, status) {
+            post('/classify', { first, second, status, time_spent: elapsedSeconds() });
+        }
+
+        const executeUndo = () => post('/undo');
+        const executeRedo = () => post('/redo');
+        const flagImage = () => { if (state.currentImage) post('/flag'); };
+
+        async function fetchState() {
+            try {
+                const data = await (await fetch('/state')).json();
                 state.uploadComplete = data.upload_complete;
                 applyState(data);
-                if (data.current_selection === undefined) {{
-                    state.currentSelection = {{
-                        first_label: null,
-                        second_label: null,
-                        awaiting_alternative: false,
-                        awaiting_status: false
-                    }};
-                }}
-
                 updateUI();
-            }} catch (e) {{
+            } catch (e) {
                 console.error('Failed to fetch state:', e);
-            }}
-        }}
-
-        async function selectLabel(key) {{
-            if (!state.currentImage) return;
-            
-            const sel = state.currentSelection;
-            
-            // Don't allow if already in alternative or status selection
-            if (sel.awaiting_alternative || sel.awaiting_status) {{
-                showToast('Complete current selection first', true);
-                return;
-            }}
-
-            try {{
-                const res = await fetch('/select_label', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ key, time_spent: elapsedSeconds() }})
-                }});
-
-                const data = await res.json();
-
-                if (data.success) {{
-                    // Check if auto-advanced (Uninfected)
-                    if (data.auto_advanced) {{
-                        showToast(data.message);
-                        applyState(data);
-                        updateUI();
-                    }} else {{
-                        state.currentSelection = data.selection;
-                        updateUI();
-                    }}
-                }} else {{
-                    showToast(data.message, true);
-                }}
-            }} catch (e) {{
-                showToast('Error selecting label', true);
-            }}
-        }}
-
-        async function selectAlternative(key) {{
-            try {{
-                const res = await fetch('/select_alternative', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ key }})
-                }});
-
-                const data = await res.json();
-
-                if (data.success) {{
-                    state.currentSelection = data.selection;
-                    updateUI();
-                }} else {{
-                    showToast(data.message, true);
-                }}
-            }} catch (e) {{
-                showToast('Error selecting alternative', true);
-            }}
-        }}
-
-        async function clearSelection() {{
-            try {{
-                const res = await fetch('/clear_selection', {{ method: 'POST' }});
-                const data = await res.json();
-
-                if (data.success) {{
-                    state.currentSelection = data.selection;
-                    updateUI();
-                }}
-            }} catch (e) {{
-                showToast('Error clearing selection', true);
-            }}
-        }}
-
-        async function finalizeWithStatus(status) {{
-            if (!state.currentSelection.awaiting_status) {{
-                showToast('Select alternative first', true);
-                return;
-            }}
-
-            try {{
-                const res = await fetch('/finalize', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ status, time_spent: elapsedSeconds() }})
-                }});
-
-                const data = await res.json();
-
-                if (data.success) {{
-                    showToast(data.message);
-                    applyState(data);
-                    updateUI();
-                }} else {{
-                    showToast(data.message, true);
-                }}
-            }} catch (e) {{
-                showToast('Error finalizing', true);
-            }}
-        }}
-
-        async function executeUndo() {{
-            try {{
-                const res = await fetch('/undo', {{ method: 'POST' }});
-                const data = await res.json();
-
-                if (data.success) {{
-                    showToast('Undo successful');
-                    applyState(data);
-                    updateUI();
-                }} else {{
-                    showToast(data.message, true);
-                }}
-            }} catch (e) {{
-                showToast('Error undoing', true);
-            }}
-        }}
-
-        async function executeRedo() {{
-            try {{
-                const res = await fetch('/redo', {{ method: 'POST' }});
-                const data = await res.json();
-
-                if (data.success) {{
-                    showToast('Redo successful');
-                    applyState(data);
-                    updateUI();
-                }} else {{
-                    showToast(data.message, true);
-                }}
-            }} catch (e) {{
-                showToast('Error redoing', true);
-            }}
-        }}
-
-        async function flagImage() {{
-            if (!state.currentImage) return;
-            try {{
-                const res = await fetch('/flag', {{ method: 'POST' }});
-                const data = await res.json();
-
-                if (data.success) {{
-                    showToast(data.message);
-                    applyState(data);
-                    updateUI();
-                }} else {{
-                    showToast(data.message, true);
-                }}
-            }} catch (e) {{
-                showToast('Error flagging', true);
-            }}
-        }}
-
-        // Backspace steps back through the current selection before touching the
-        // previous image: alternative/status -> class -> (nothing) -> undo.
-        async function stepBack() {{
-            const sel = state.currentSelection;
-            if (!sel.first_label && !sel.awaiting_alternative && !sel.awaiting_status) {{
-                executeUndo();
-                return;
-            }}
-            try {{
-                const res = await fetch('/step_back', {{ method: 'POST' }});
-                const data = await res.json();
-                if (data.success && data.stepped) {{
-                    state.currentSelection = data.current_selection;
-                    updateUI();
-                }} else {{
-                    executeUndo();
-                }}
-            }} catch (e) {{
-                showToast('Error going back', true);
-            }}
-        }}
+            }
+        }
 
         // Download via an <a download> click, not location.href, so the browser
         // treats it as a file download and never fires the beforeunload prompt.
-        function triggerDownload(url) {{
+        function triggerDownload(url) {
             const a = document.createElement('a');
             a.href = url;
             a.download = '';
             document.body.appendChild(a);
             a.click();
             a.remove();
-        }}
+        }
 
-        function downloadSorted() {{
-            if (state.totalSorted > 0) {{
-                triggerDownload('/download');
-            }}
-        }}
+        function downloadSorted() {
+            if (state.totalSorted > 0) triggerDownload('/download');
+        }
 
-        function saveProgress() {{
-            if (state.totalSorted > 0) {{
-                triggerDownload('/save_progress');
-            }}
-        }}
+        function saveProgress() {
+            if (state.totalSorted > 0) triggerDownload('/save_progress');
+        }
 
-        async function resetSession() {{
-            if (hasUnsavedChanges()) {{
-                showUnsavedModal(async () => {{
-                    await doReset();
-                }});
-            }} else {{
-                if (!confirm('Reset all data? This cannot be undone.')) return;
-                await doReset();
-            }}
-        }}
+        async function resetSession() {
+            const message = hasUnsavedChanges()
+                ? `Reset all data? ${state.remainingCount} images are still unsorted and your `
+                  + `${state.totalSorted} classifications will be lost. Save first if you want to keep them.`
+                : 'Reset all data? This cannot be undone.';
 
-        async function doReset() {{
-            try {{
-                const res = await fetch('/reset', {{ method: 'POST' }});
-                const data = await res.json();
+            if (!confirm(message)) return;
 
-                if (data.success) {{
+            try {
+                const data = await (await fetch('/reset', { method: 'POST' })).json();
+                if (data.success) {
                     showToast('Session reset');
                     await fetchState();
-                }}
-            }} catch (e) {{
+                }
+            } catch (e) {
                 showToast('Error resetting', true);
-            }}
-        }}
+            }
+        }
 
         // =====================================================================
         // FILE UPLOADS
         // =====================================================================
-        document.getElementById('dataset-input').addEventListener('change', async (e) => {{
-            const file = e.target.files[0];
-            if (!file) return;
-
+        async function uploadFile(url, field, file) {
             const formData = new FormData();
-            formData.append('dataset_zip', file);
+            formData.append(field, file);
 
-            showToast('Uploading...');
-
-            try {{
-                const res = await fetch('/upload_dataset', {{
-                    method: 'POST',
-                    body: formData
-                }});
-
-                const data = await res.json();
-
-                if (data.success) {{
-                    showToast(data.message);
-                    await fetchState();
-                }} else {{
-                    showToast(data.message, true);
-                }}
-            }} catch (e) {{
+            try {
+                const data = await (await fetch(url, { method: 'POST', body: formData })).json();
+                showToast(data.message, !data.success);
+                if (data.success) await fetchState();
+            } catch (e) {
                 showToast('Upload failed', true);
-            }}
+            }
+        }
 
+        document.getElementById('dataset-input').addEventListener('change', async (e) => {
+            if (!e.target.files[0]) return;
+            showToast('Uploading...');
+            await uploadFile('/upload_dataset', 'dataset_zip', e.target.files[0]);
             e.target.value = '';
-        }});
+        });
 
-        document.getElementById('progress-input').addEventListener('change', async (e) => {{
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('progress_csv', file);
-
-            try {{
-                const res = await fetch('/upload_progress', {{
-                    method: 'POST',
-                    body: formData
-                }});
-
-                const data = await res.json();
-
-                if (data.success) {{
-                    showToast(data.message);
-                    applyState(data);
-                    updateUI();
-                }} else {{
-                    showToast(data.message, true);
-                }}
-            }} catch (e) {{
-                showToast('Progress load failed', true);
-            }}
-
+        document.getElementById('progress-input').addEventListener('change', async (e) => {
+            if (!e.target.files[0]) return;
+            await uploadFile('/upload_progress', 'progress_csv', e.target.files[0]);
             e.target.value = '';
-        }});
+        });
 
         // =====================================================================
         // KEYBOARD SHORTCUTS
         // =====================================================================
-        document.addEventListener('keydown', (e) => {{
-            // Ignore if typing in an input
+        document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            
-            // Ignore if modal is open
-            if (document.getElementById('unsaved-modal').classList.contains('visible')) return;
 
             const key = e.key;
-            const sel = state.currentSelection;
 
             // Q/W/E = quick class shortcuts for Platelet / Uninfected / Cannot Determine
             // (only during Step 1, mirroring pressing 9 / 0 / - directly).
-            const QWE = {{ q: '9', w: '0', e: '-' }};
-            if (QWE[key.toLowerCase()] !== undefined) {{
+            if (QUICK_KEYS[key.toLowerCase()] !== undefined) {
                 e.preventDefault();
-                if (!sel.awaiting_status && !sel.awaiting_alternative) {{
-                    selectLabel(QWE[key.toLowerCase()]);
-                }}
+                selectLabel(QUICK_KEYS[key.toLowerCase()]);
                 return;
-            }}
+            }
 
             // Number keys 0-9 and minus for classification
-            if (/^[0-9]$/.test(key) || key === '-') {{
+            if (/^[0-9]$/.test(key) || key === '-') {
                 e.preventDefault();
 
-                // During status selection, 1/2/3 = Usable/Limited/Unusable.
-                if (sel.awaiting_status) {{
-                    if (key === '1') finalizeWithStatus('Usable');
-                    else if (key === '2') finalizeWithStatus('Limited');
-                    else if (key === '3') finalizeWithStatus('Unusable');
-                    return;
-                }}
-
-                // If awaiting alternative: pressing the first label's own key again
-                // means "No Alternative"; any other class key is the alternative.
-                if (sel.awaiting_alternative) {{
-                    if (key === sel.first_label) selectAlternative('none');
-                    else if (!NON_ALTERNATIVE.includes(key)) selectAlternative(key);
-                }} else {{
+                if (sel.step === 'status') {
+                    // 1/2/3 = Usable/Limited/Unusable.
+                    const status = { '1': 'Usable', '2': 'Limited', '3': 'Unusable' }[key];
+                    if (status) finalizeWithStatus(status);
+                } else if (sel.step === 'alt') {
+                    // Pressing the first label's own key again means "No Alternative";
+                    // any other class key is the alternative.
+                    if (key === sel.first) selectAlternative('none');
+                    else if (!CFG.notOfferedAsAlternative.includes(key)) selectAlternative(key);
+                } else {
                     selectLabel(key);
-                }}
+                }
                 return;
-            }}
+            }
 
-            // Enter key
-            if (key === 'Enter') {{
-                e.preventDefault();
-                if (sel.awaiting_status) {{
-                    finalizeWithStatus('Usable');
-                }} else if (sel.awaiting_alternative) {{
-                    selectAlternative('none');
-                }}
-                return;
-            }}
+            const actions = {
+                'Enter': () => sel.step === 'status' ? finalizeWithStatus('Usable')
+                             : sel.step === 'alt' ? selectAlternative('none') : null,
+                "'": () => finalizeWithStatus('Limited'),
+                'Shift': () => finalizeWithStatus('Unusable'),
+                'z': stepBack,
+                'Backspace': stepBack,
+                'y': executeRedo,
+                'f': flagImage,
+                '+': zoomIn,
+                '=': zoomIn,
+                '_': zoomOut,
+                'Escape': clearSelection
+            };
 
-            // Apostrophe for Limited
-            if (key === "'") {{
-                e.preventDefault();
-                if (sel.awaiting_status) {{
-                    finalizeWithStatus('Limited');
-                }}
-                return;
-            }}
+            // Apostrophe and Shift only mean anything during status selection.
+            if ((key === "'" || key === 'Shift') && sel.step !== 'status') return;
 
-            // Shift for Unusable
-            if (key === 'Shift') {{
+            const action = actions[key] || actions[key.toLowerCase()];
+            if (action) {
                 e.preventDefault();
-                if (sel.awaiting_status) {{
-                    finalizeWithStatus('Unusable');
-                }}
-                return;
-            }}
-
-            // Step back: undo the last selection step, or the last image if none.
-            if (key === 'z' || key === 'Z' || key === 'Backspace') {{
-                e.preventDefault();
-                stepBack();
-                return;
-            }}
-
-            // Redo
-            if (key === 'y' || key === 'Y') {{
-                e.preventDefault();
-                executeRedo();
-                return;
-            }}
-
-            // Flag current image and skip to the back of the set
-            if (key === 'f' || key === 'F') {{
-                e.preventDefault();
-                flagImage();
-                return;
-            }}
-
-            // Zoom
-            if (key === '+' || key === '=') {{
-                e.preventDefault();
-                zoomIn();
-                return;
-            }}
-
-            if (key === '_') {{
-                e.preventDefault();
-                zoomOut();
-                return;
-            }}
-
-            // Clear selection with Escape
-            if (key === 'Escape') {{
-                e.preventDefault();
-                clearSelection();
-                return;
-            }}
-        }});
+                action();
+            }
+        });
 
         // Zoom with mouse wheel
-        document.addEventListener('wheel', (e) => {{
+        document.addEventListener('wheel', (e) => {
             const container = document.getElementById('image-container');
-            if (!container || !container.contains(e.target)) return;
+            if (!container.contains(e.target)) return;
 
-            if (e.ctrlKey || e.metaKey || e.shiftKey) {{
+            if (e.ctrlKey || e.metaKey || e.shiftKey) {
                 e.preventDefault();
                 if (e.deltaY < 0) zoomIn();
                 else zoomOut();
-            }}
-        }}, {{ passive: false }});
+            }
+        }, { passive: false });
 
         // =====================================================================
         // INIT
         // =====================================================================
-        window.onload = function() {{
+        window.onload = function() {
             fetchState();
-            setZoom(DEFAULT_ZOOM);
-        }};
+            setZoom(CFG.defaultZoom);
+        };
     </script>
 </body>
 </html>
-'''

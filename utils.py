@@ -1,5 +1,6 @@
 import os
-from config import ALLOWED_IMAGE_EXTENSIONS, CLASS_MAPPING, STATUS_SUBFOLDERS, TOP_VISUAL_GUIDE_FILE
+
+from config import ALLOWED_IMAGE_EXTENSIONS, CLASS_MAPPING, STATUSES
 
 
 def allowed_file(filename):
@@ -8,86 +9,46 @@ def allowed_file(filename):
 
 
 def get_images_list(directory):
-    """Get sorted list of image files in directory."""
+    """Sorted list of image files in directory; empty if it doesn't exist."""
     if not directory or not os.path.exists(directory):
         return []
 
     try:
-        files = [f for f in os.listdir(directory) if allowed_file(f)]
-        return sorted(files)
+        return sorted(f for f in os.listdir(directory) if allowed_file(f))
     except Exception:
         return []
 
 
 def get_sorted_counts(sorted_dir):
-    """Get count of images in each class/status combination."""
-    counts = {}
+    """How many images are classified under each class name.
 
-    for class_name in CLASS_MAPPING.values():
-        counts[class_name] = {
-            'total': 0,
-            'Usable': 0,
-            'Limited': 0,
-            'Unusable': 0
-        }
-        
-        class_dir = os.path.join(sorted_dir, class_name)
-
-        if os.path.exists(class_dir):
-            # Only count the real statuses. Second_Choice holds duplicate copies of
-            # images already counted under their primary label, so including it here
-            # double-counts and makes "done" outrun "left". ponytail: real statuses only.
-            for status in ('Usable', 'Limited', 'Unusable'):
-                status_dir = os.path.join(class_dir, status)
-                if os.path.exists(status_dir):
-                    count = len(get_images_list(status_dir))
-                    counts[class_name][status] = count
-                    counts[class_name]['total'] += count
-
-    return counts
-
-
-def get_total_sorted(sorted_dir):
-    """Get total number of sorted images."""
-    counts = get_sorted_counts(sorted_dir)
-    return sum(c['total'] for c in counts.values())
+    Second_Choice is excluded. It holds duplicate copies of images already counted
+    under their primary label, so including it double-counts and makes "done"
+    outrun "left". ponytail: real statuses only.
+    """
+    return {
+        name: sum(len(get_images_list(os.path.join(sorted_dir, name, status))) for status in STATUSES)
+        for name in CLASS_MAPPING.values()
+    }
 
 
 def get_unique_filename(directory, filename):
     """Generate unique filename if file already exists."""
     if not os.path.exists(os.path.join(directory, filename)):
         return filename
-    
+
     base, ext = os.path.splitext(filename)
     counter = 1
-    
+
     while os.path.exists(os.path.join(directory, f"{base}_{counter}{ext}")):
         counter += 1
-    
+
     return f"{base}_{counter}{ext}"
 
 
-def get_visual_guide_info():
-    """Get information about the built-in visual guide."""
-    if not TOP_VISUAL_GUIDE_FILE:
-        return {'exists': False, 'url': None, 'type': None}
-
-    full_path = os.path.abspath(TOP_VISUAL_GUIDE_FILE)
-
-    if not os.path.exists(full_path):
-        return {'exists': False, 'url': None, 'type': None}
-
-    ext = os.path.splitext(full_path)[1].lower().replace('.', '')
-
-    if ext == 'pdf':
-        guide_type = 'pdf'
-    elif ext in ALLOWED_IMAGE_EXTENSIONS:
-        guide_type = 'image'
-    else:
-        guide_type = 'unsupported'
-
-    return {
-        'exists': guide_type in {'pdf', 'image'},
-        'url': '/visual_guide',
-        'type': guide_type
-    }
+def float_or_none(value):
+    """Coerce untrusted input to a float, or None if it isn't one."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
