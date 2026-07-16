@@ -12,7 +12,6 @@ from file_handler import (
     undo_classification,
     redo_classification,
     flag_current_image,
-    create_download_zip,
     create_progress_csv,
     load_progress_csv,
 )
@@ -156,25 +155,6 @@ def register_routes(app):
         success, message = flag_current_image(session_data)
 
         return jsonify({'success': success, 'message': message, **_state_payload(session_data)})
-
-    @app.route('/download', methods=['GET'])
-    def download():
-        session_data = get_session_data()
-
-        if not session_data['history']:
-            return "No sorted images to download", 400
-
-        try:
-            zip_path = create_download_zip(session_data)
-            name = session_data['dataset_name'] or 'sorted_dataset'
-            return send_file(
-                zip_path,
-                mimetype='application/zip',
-                as_attachment=True,
-                download_name=f'{name}_sorted.zip'
-            )
-        except Exception as e:
-            return f"Download error: {str(e)}", 500
 
     @app.route('/save_progress', methods=['GET'])
     def save_progress():

@@ -97,14 +97,9 @@ def main():
     assert by_file['c.png'][2] == 'Schizont' and by_file['c.png'][4] == 'No', by_file['c.png']
     assert by_file['a.png'][5] == '1.5', by_file['a.png']
 
-    # --- download names itself after the dataset and carries the CSV -------
-    res = client.get('/download')
-    assert 'my_dataset_sorted.zip' in res.headers['Content-Disposition'], res.headers
-    with zipfile.ZipFile(io.BytesIO(res.get_data())) as z:
-        names = z.namelist()
-    assert 'classifications.csv' in names, names
-    assert 'Early Ring/Usable/a.png' in names, names
-    assert 'Middle Ring/Second_Choice/a.png' in names, names   # duplicates ship, they just don't count
+    # --- save_progress names itself after the dataset -----------------------
+    res = client.get('/save_progress')
+    assert 'my_dataset_progress.csv' in res.headers['Content-Disposition'], res.headers
 
     # --- restoring progress classifies BY NAME, not by queue position ------
     # Only b.png is left unsorted; a CSV naming a.png first must not consume it.

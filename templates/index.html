@@ -971,15 +971,12 @@
             <button class="btn btn-secondary btn-icon" id="flag-btn" disabled onclick="flagImage()" title="Flag &amp; skip (F)">
                 🚩
             </button>
-            <button class="btn btn-secondary" id="save-btn" disabled onclick="saveProgress()">
-                💾 Save
+            <button class="btn btn-success" id="save-btn" disabled onclick="saveProgress()">
+                📥 Download
             </button>
             <input type="file" id="progress-input" accept=".csv">
             <button class="btn btn-secondary" id="load-btn" disabled onclick="document.getElementById('progress-input').click()">
                 📤 Load
-            </button>
-            <button class="btn btn-success" id="download-btn" disabled onclick="downloadSorted()">
-                📥 Download
             </button>
             <button class="btn btn-danger btn-icon" onclick="resetSession()" title="Reset">
                 🔄
@@ -1322,7 +1319,6 @@
             document.getElementById('flag-btn').disabled = !(state.uploadComplete && hasImage);
             document.getElementById('save-btn').disabled = !hasSorted;
             document.getElementById('load-btn').disabled = !state.uploadComplete;
-            document.getElementById('download-btn').disabled = !hasSorted;
 
             // Progress stats
             document.getElementById('remaining-count').textContent = state.remainingCount;
@@ -1642,10 +1638,6 @@
             document.body.appendChild(a);
             a.click();
             a.remove();
-        }
-
-        function downloadSorted() {
-            if (state.totalSorted > 0) triggerDownload('/download');
         }
 
         function saveProgress() {

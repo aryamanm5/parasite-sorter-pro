@@ -203,23 +203,6 @@ def flag_current_image(session_data):
         return False, f'Flag error: {str(e)}'
 
 
-def create_download_zip(session_data):
-    """Create ZIP file of sorted images with CSV."""
-    sorted_dir = session_data['sorted_dir']
-    zip_path = os.path.join(session_data['session_dir'], 'sorted_images.zip')
-
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for root, _, files in os.walk(sorted_dir):
-            for img_file in files:
-                if allowed_file(img_file):
-                    path = os.path.join(root, img_file)
-                    zipf.write(path, os.path.relpath(path, sorted_dir))
-
-        zipf.writestr('classifications.csv', create_progress_csv(session_data))
-
-    return zip_path
-
-
 def create_progress_csv(session_data):
     """CSV of the classification history.
 
