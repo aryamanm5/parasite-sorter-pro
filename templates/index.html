@@ -892,6 +892,106 @@
             background: var(--status-unusable-text);
         }
 
+        /* Milestone / summary overlays (halfway + end) */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(28,28,30,0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            padding: 20px;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        /* Halfway screen: fills the image viewer only, leaving the rest of the app
+           in place. .image-viewer is position:relative, so this pins to it. */
+        .viewer-screen {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            padding: 20px;
+        }
+
+        .viewer-screen.hidden {
+            display: none;
+        }
+
+        .overlay-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            padding: 32px 36px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .overlay-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        .overlay-card h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: -0.3px;
+        }
+
+        .overlay-card p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .overlay-stats {
+            text-align: left;
+            margin: 16px 0;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 7px 0;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .stat-row:last-child { border-bottom: none; }
+        .stat-row span:first-child { color: var(--text-secondary); }
+        .stat-row span:last-child { font-weight: 600; }
+
+        .stat-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 10px 0;
+        }
+
+        .overlay-hint {
+            margin-top: 18px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .overlay-card .btn { margin: 4px; }
+
         /* File Input Hidden */
         input[type="file"] {
             display: none;
@@ -962,6 +1062,9 @@
         </div>
 
         <div class="header-actions hidden" id="header-actions">
+            <button class="btn btn-secondary btn-icon" id="timer-toggle" onclick="toggleTimer()" title="Show/hide timer">
+                ⏱
+            </button>
             <button class="btn btn-secondary btn-icon" id="undo-btn" disabled onclick="executeUndo()" title="Undo (Z)">
                 ↩
             </button>
@@ -1132,6 +1235,18 @@
                         <span id="filename-display"></span>
                     </div>
 
+                    <!-- Halfway milestone: a screen inside the viewer, not a modal.
+                         Any click here or any key continues; the timer stays paused. -->
+                    <div class="viewer-screen hidden" id="halfway-overlay" onclick="dismissHalfway()">
+                        <div class="overlay-card">
+                            <div class="overlay-icon">🎯</div>
+                            <h2>Halfway there!</h2>
+                            <p id="halfway-sub"></p>
+                            <div class="overlay-stats" id="halfway-stats"></div>
+                            <div class="overlay-hint">Click here or press any key to continue</div>
+                        </div>
+                    </div>
+
                     <!-- Status Panel -->
                     <div class="status-panel hidden" id="status-panel">
                         <button class="status-btn usable" onclick="finalizeWithStatus('Usable')" disabled id="status-usable">
@@ -1192,6 +1307,17 @@
         </main>
     </div>
 
+    <!-- End-of-session summary -->
+    <div class="overlay hidden" id="end-overlay">
+        <div class="overlay-card">
+            <div class="overlay-icon">🎉</div>
+            <h2>All done!</h2>
+            <div class="overlay-stats" id="end-stats"></div>
+            <button class="btn btn-success" onclick="saveProgress()">📥 Download CSV</button>
+            <button class="btn btn-secondary" onclick="hideEnd()">Close</button>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
@@ -1216,8 +1342,25 @@
             sortedCounts: {},
             totalSorted: 0,
             lastTime: 0,
-            avgTime: 0
+            avgTime: 0,
+            totalTime: 0
         };
+
+        // Session-scoped run stats (reset on new dataset / reset).
+        let sessionStart = null;   // ms epoch when the first image was shown
+        let halfwayActive = false; // halfway overlay currently up
+        let halfwayShown = false;  // only fire the halfway milestone once
+        let endActive = false;     // end summary overlay currently up
+        let endShown = false;      // don't re-pop the summary after Close
+        let timerHidden = false;   // user toggled the timer off
+
+        function resetRunStats() {
+            sessionStart = null;
+            halfwayActive = halfwayShown = endActive = endShown = false;
+            timeAccum = {};
+            document.getElementById('halfway-overlay').classList.add('hidden');
+            document.getElementById('end-overlay').classList.add('hidden');
+        }
 
         // The selection flow lives entirely here: 'class' -> 'alt' -> 'status',
         // then one POST /classify with the finished triple.
@@ -1237,36 +1380,46 @@
         // =====================================================================
         const TIMER_CAP_MS = 5 * 60 * 1000;
         let timerImage = null;       // which image the running timer belongs to
-        let timerStart = 0;          // Date.now() when timing began
+        let timerStart = 0;          // Date.now() when the current sitting began
         let timerInterval = null;
+        // Per-image seconds accrued across visits. Undo brings an image back to the
+        // front; resuming from its accrued time (instead of 0) is why the timer no
+        // longer resets when you go back to an image.
+        let timeAccum = {};
 
         function fmtTime(sec) {
             sec = Math.max(0, Math.round(sec));
             return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
         }
 
+        // Total time on the timed image: prior accrued + this sitting (sitting capped
+        // at 5 min so a walk-away doesn't skew the average).
         function elapsedSeconds() {
-            return Math.min(Date.now() - timerStart, TIMER_CAP_MS) / 1000;
+            const sitting = Math.min(Date.now() - timerStart, TIMER_CAP_MS) / 1000;
+            return (timeAccum[timerImage] || 0) + sitting;
         }
 
         function tickTimer() {
-            const ms = Date.now() - timerStart;
-            if (ms >= TIMER_CAP_MS) {
+            if (Date.now() - timerStart >= TIMER_CAP_MS) {
                 clearInterval(timerInterval);   // pause: likely stepped away
                 timerInterval = null;
             }
-            document.getElementById('time-current').textContent = fmtTime(Math.min(ms, TIMER_CAP_MS) / 1000);
+            document.getElementById('time-current').textContent = fmtTime(elapsedSeconds());
         }
 
         function startImageTimer(imageName) {
+            // Bank the outgoing image's time so a later revisit resumes from it.
+            if (timerImage && timerImage !== imageName) timeAccum[timerImage] = elapsedSeconds();
             if (timerInterval) clearInterval(timerInterval);
+            if (sessionStart === null) sessionStart = Date.now();   // sorting began
             timerImage = imageName;
             timerStart = Date.now();
-            document.getElementById('time-current').textContent = '0:00';
+            document.getElementById('time-current').textContent = fmtTime(timeAccum[imageName] || 0);
             timerInterval = setInterval(tickTimer, 1000);
         }
 
         function stopImageTimer() {
+            if (timerImage) timeAccum[timerImage] = elapsedSeconds();
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = null;
             timerImage = null;
@@ -1302,14 +1455,16 @@
             // Header visibility
             document.getElementById('header-actions').classList.toggle('hidden', !state.uploadComplete);
             document.getElementById('progress-display').classList.toggle('hidden', !state.uploadComplete);
-            document.getElementById('time-display').classList.toggle('hidden', !state.uploadComplete);
+            document.getElementById('time-display').classList.toggle('hidden', !state.uploadComplete || timerHidden);
 
-            // Per-image timer: restart on a new image, stop when none left.
+            // Per-image timer: restart on a new image, stop when none left. Held while
+            // a milestone/summary overlay is up so that screen's time isn't counted.
             document.getElementById('time-last').textContent = fmtTime(state.lastTime);
             document.getElementById('time-avg').textContent = fmtTime(state.avgTime);
-            if (state.uploadComplete && hasImage) {
+            const overlayUp = halfwayActive || endActive;
+            if (state.uploadComplete && hasImage && !overlayUp) {
                 if (state.currentImage !== timerImage) startImageTimer(state.currentImage);
-            } else if (timerImage !== null) {
+            } else if (timerImage !== null && !overlayUp) {
                 stopImageTimer();
             }
 
@@ -1331,7 +1486,7 @@
             updateCountBadges();
             updateImageViewer(hasImage);
 
-            document.getElementById('classification-bar').classList.toggle('hidden', !state.uploadComplete || !hasImage);
+            document.getElementById('classification-bar').classList.toggle('hidden', !state.uploadComplete || !hasImage || halfwayActive);
             document.getElementById('status-panel').classList.toggle('hidden', !hasImage || sel.step !== 'status');
 
             updateButtonStates();
@@ -1448,6 +1603,85 @@
                 secondTag.textContent = CFG.classMap[sel.second];
                 secondTag.classList.toggle('non-adjacent', !isAdjacent);
             }
+        }
+
+        // =====================================================================
+        // TIMER TOGGLE + MILESTONE / SUMMARY OVERLAYS
+        // =====================================================================
+        function toggleTimer() {
+            timerHidden = !timerHidden;
+            document.getElementById('timer-toggle').style.opacity = timerHidden ? '0.4' : '';
+            updateUI();
+        }
+
+        function fmtClock(ms) {
+            return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        // Per-class counts (non-empty only) as stat rows.
+        function classCountRows() {
+            return Object.values(CFG.classMap)
+                .map(name => [name, state.sortedCounts[name] || 0])
+                .filter(([, c]) => c > 0)
+                .map(([name, c]) =>
+                    `<div class="stat-row"><span>${name}</span>` +
+                    `<span>${c} · ${Math.round(c / state.totalSorted * 100)}%</span></div>`)
+                .join('');
+        }
+
+        // Fire the milestone / summary overlays. Called after every state change;
+        // the *Shown flags keep each to a single appearance per run.
+        function checkMilestones() {
+            const total = state.remainingCount + state.totalSorted;
+
+            if (!halfwayShown && total > 1 && state.remainingCount > 0
+                && state.totalSorted >= Math.floor(total / 2)) {
+                showHalfway(total);
+            } else if (!endShown && state.uploadComplete && state.remainingCount === 0
+                && state.totalSorted > 0) {
+                showEnd();
+            }
+        }
+
+        function showHalfway(total) {
+            halfwayShown = true;
+            halfwayActive = true;
+            stopImageTimer();   // pause: halfway-screen time is not counted
+            document.getElementById('halfway-sub').textContent =
+                `${state.totalSorted} of ${total} sorted — ${state.remainingCount} to go`;
+            document.getElementById('halfway-stats').innerHTML =
+                `<div class="stat-row"><span>Active time so far</span><span>${fmtTime(state.totalTime)}</span></div>` +
+                `<div class="stat-row"><span>Average / image</span><span>${fmtTime(state.avgTime)}</span></div>` +
+                `<div class="stat-divider"></div>` + classCountRows();
+            document.getElementById('halfway-overlay').classList.remove('hidden');
+            updateUI();   // hide the classification bar behind the screen
+        }
+
+        function dismissHalfway() {
+            if (!halfwayActive) return;
+            halfwayActive = false;
+            delete timeAccum[state.currentImage];   // next image starts at 0:00
+            document.getElementById('halfway-overlay').classList.add('hidden');
+            updateUI();   // resumes the timer on the next image
+        }
+
+        function showEnd() {
+            endShown = true;
+            endActive = true;
+            stopImageTimer();
+            document.getElementById('end-stats').innerHTML =
+                `<div class="stat-row"><span>Total sorted</span><span>${state.totalSorted}</span></div>` +
+                `<div class="stat-row"><span>Started</span><span>${sessionStart ? fmtClock(sessionStart) : '—'}</span></div>` +
+                `<div class="stat-row"><span>Ended</span><span>${fmtClock(Date.now())}</span></div>` +
+                `<div class="stat-row"><span>Total active time</span><span>${fmtTime(state.totalTime)}</span></div>` +
+                `<div class="stat-row"><span>Average / image</span><span>${fmtTime(state.avgTime)}</span></div>` +
+                `<div class="stat-divider"></div>` + classCountRows();
+            document.getElementById('end-overlay').classList.remove('hidden');
+        }
+
+        function hideEnd() {
+            endActive = false;
+            document.getElementById('end-overlay').classList.add('hidden');
         }
 
         // =====================================================================
@@ -1583,6 +1817,7 @@
             state.totalSorted = data.total_sorted;
             state.lastTime = data.last_time;
             state.avgTime = data.avg_time;
+            state.totalTime = data.total_time;
             resetSelection();   // the queue moved; any half-made selection is stale
         }
 
@@ -1605,6 +1840,7 @@
                 showToast(data.message);
                 applyState(data);
                 updateUI();
+                checkMilestones();
             } catch (e) {
                 showToast('Request failed', true);
             }
@@ -1624,6 +1860,7 @@
                 state.uploadComplete = data.upload_complete;
                 applyState(data);
                 updateUI();
+                checkMilestones();
             } catch (e) {
                 console.error('Failed to fetch state:', e);
             }
@@ -1655,6 +1892,7 @@
             try {
                 const data = await (await fetch('/reset', { method: 'POST' })).json();
                 if (data.success) {
+                    resetRunStats();
                     showToast('Session reset');
                     await fetchState();
                 }
@@ -1681,6 +1919,7 @@
 
         document.getElementById('dataset-input').addEventListener('change', async (e) => {
             if (!e.target.files[0]) return;
+            resetRunStats();   // fresh dataset, fresh run
             showToast('Uploading...');
             await uploadFile('/upload_dataset', 'dataset_zip', e.target.files[0]);
             e.target.value = '';
@@ -1697,6 +1936,11 @@
         // =====================================================================
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            // Overlays swallow shortcuts: any key continues past the halfway screen;
+            // the end summary ignores them until Close.
+            if (halfwayActive) { e.preventDefault(); dismissHalfway(); return; }
+            if (endActive) { e.preventDefault(); return; }
 
             const key = e.key;
 

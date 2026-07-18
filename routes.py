@@ -32,6 +32,7 @@ def _state_payload(session_data):
         'total_sorted': sum(counts.values()),
         'last_time': times[-1] if times else 0,
         'avg_time': sum(times) / len(times) if times else 0,
+        'total_time': sum(times),
     }
 
 
