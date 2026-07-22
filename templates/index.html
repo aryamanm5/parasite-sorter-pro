@@ -1416,6 +1416,8 @@
             timerStart = Date.now();
             document.getElementById('time-current').textContent = fmtTime(timeAccum[imageName] || 0);
             timerInterval = setInterval(tickTimer, 1000);
+            timerPaused = false;
+            armIdle();
         }
 
         function stopImageTimer() {
@@ -1423,8 +1425,52 @@
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = null;
             timerImage = null;
+            timerPaused = false;
+            clearTimeout(idleTimer);
             document.getElementById('time-current').textContent = '0:00';
         }
+
+        // IDLE / FOCUS AUTO-PAUSE
+        // The timer freezes when you switch tabs/desktops or stop interacting, and
+        // resumes on the next mouse move or key press — so a walk-away doesn't count.
+        const IDLE_MS = 25000;   // ponytail: pause after 15s idle; tune if too eager/lax
+        let timerPaused = false;
+        let idleTimer = null;
+
+        function armIdle() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(pauseTimer, IDLE_MS);
+        }
+
+        function pauseTimer() {
+            if (timerPaused || timerImage === null) return;
+            timeAccum[timerImage] = elapsedSeconds();   // bank the sitting so far
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            timerPaused = true;
+        }
+
+        function resumeTimer() {
+            if (!timerPaused || timerImage === null) return;
+            timerPaused = false;
+            timerStart = Date.now();
+            timerInterval = setInterval(tickTimer, 1000);
+            tickTimer();
+        }
+
+        function markActivity() {
+            if (document.hidden) return;   // tab/desktop switch: stay paused
+            resumeTimer();
+            armIdle();
+        }
+
+        ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart'].forEach(ev =>
+            document.addEventListener(ev, markActivity, { passive: true }));
+        document.addEventListener('visibilitychange', () => {
+            document.hidden ? pauseTimer() : markActivity();
+        });
+        window.addEventListener('blur', pauseTimer);
+        window.addEventListener('focus', markActivity);
 
         // =====================================================================
         // UI HELPERS
@@ -1944,29 +1990,27 @@
 
             const key = e.key;
 
-            // Q/W/E = quick class shortcuts for Platelet / Uninfected / Cannot Determine
-            // (only during Step 1, mirroring pressing 9 / 0 / - directly).
-            if (QUICK_KEYS[key.toLowerCase()] !== undefined) {
-                e.preventDefault();
-                selectLabel(QUICK_KEYS[key.toLowerCase()]);
-                return;
-            }
+            // Q/W/E = quick class shortcuts for Platelet / Uninfected / Cannot Determine,
+            // mapped to their digits and dispatched exactly like the number keys so
+            // pressing the same quick key again during Step 2 means "No Alternative".
+            const digit = QUICK_KEYS[key.toLowerCase()] !== undefined
+                ? QUICK_KEYS[key.toLowerCase()] : key;
 
             // Number keys 0-9 and minus for classification
-            if (/^[0-9]$/.test(key) || key === '-') {
+            if (/^[0-9]$/.test(digit) || digit === '-') {
                 e.preventDefault();
 
                 if (sel.step === 'status') {
                     // 1/2/3 = Usable/Limited/Unusable.
-                    const status = { '1': 'Usable', '2': 'Limited', '3': 'Unusable' }[key];
+                    const status = { '1': 'Usable', '2': 'Limited', '3': 'Unusable' }[digit];
                     if (status) finalizeWithStatus(status);
                 } else if (sel.step === 'alt') {
                     // Pressing the first label's own key again means "No Alternative";
                     // any other class key is the alternative.
-                    if (key === sel.first) selectAlternative('none');
-                    else if (!CFG.notOfferedAsAlternative.includes(key)) selectAlternative(key);
+                    if (digit === sel.first) selectAlternative('none');
+                    else if (!CFG.notOfferedAsAlternative.includes(digit)) selectAlternative(digit);
                 } else {
-                    selectLabel(key);
+                    selectLabel(digit);
                 }
                 return;
             }
