@@ -6,6 +6,10 @@
     <title>Parasite Classifier</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Apply a saved light/dark override before first paint (no flash).
+        try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+    </script>
 </head>
 <body>
     <!-- Header -->
@@ -47,6 +51,7 @@
             </div>
         </div>
 
+        <div class="header-right">
         <div class="header-actions hidden" id="header-actions">
             <button class="btn btn-secondary btn-icon" id="timer-toggle" onclick="toggleTimer()" title="Show/hide timer">
                 ⏱
@@ -80,6 +85,12 @@
             <button class="btn btn-primary" onclick="document.getElementById('dataset-input').click()">
                 📦 Upload Dataset
             </button>
+        </div>
+
+        <button class="btn btn-secondary btn-icon" id="theme-toggle" onclick="toggleTheme()"></button>
+        <button class="btn btn-secondary" onclick="toggleHelp()" title="Help &amp; shortcuts (?)">
+            ❓ Help
+        </button>
         </div>
     </header>
 
@@ -315,6 +326,57 @@
             <button class="btn btn-secondary" onclick="hideEnd()">Close</button>
         </div>
     </div>
+
+    <!-- Help panel: how-to for new users + every keyboard shortcut. ? or H toggles. -->
+    <aside class="help-panel" id="help-panel" aria-hidden="true">
+        <div class="help-header">
+            <span>❓ Help &amp; Shortcuts</span>
+            <button class="btn btn-secondary btn-icon" onclick="toggleHelp(false)" title="Close (Esc)">✕</button>
+        </div>
+        <div class="help-body">
+            <h3>Getting started</h3>
+            <ol>
+                <li>Click <b>📦 Upload Dataset</b> and choose a ZIP of images.</li>
+                <li><b>Pick a class</b> for the image — click a button or press its key.</li>
+                <li><b>Pick an alternative</b> if you were torn between two classes, or choose <b>No Alternative</b>.</li>
+                <li><b>Rate the image quality</b>: Usable, Limited or Unusable. The next image loads automatically.</li>
+                <li>Click <b>📥 Download</b> any time for a CSV of your labels. <b>📤 Load</b> that CSV later to pick up where you left off.</li>
+            </ol>
+            <p><b>Uninfected</b> is filed as Usable in one press. <b>Cannot Determine</b> skips the alternative step. The visual guide and cue table are in the left sidebar.</p>
+
+            <h3>Choose a class</h3>
+            <table class="shortcut-table">
+                {% for key, name in cfg.classMap.items() %}
+                <tr><td><kbd>{{ key }}</kbd>{% for letter, k in cfg.quickKeys.items() if k == key %} <kbd>{{ letter | upper }}</kbd>{% endfor %}</td><td>{{ name }}</td></tr>
+                {% endfor %}
+            </table>
+
+            <h3>Alternative step</h3>
+            <table class="shortcut-table">
+                <tr><td>Any class key</td><td>Use that class as the alternative</td></tr>
+                <tr><td><kbd>Enter</kbd> or same key</td><td>No alternative</td></tr>
+            </table>
+
+            <h3>Quality step</h3>
+            <table class="shortcut-table">
+                <tr><td><kbd>1</kbd> <kbd>Enter</kbd></td><td>Usable</td></tr>
+                <tr><td><kbd>2</kbd> <kbd>'</kbd></td><td>Limited</td></tr>
+                <tr><td><kbd>3</kbd> <kbd>Shift</kbd></td><td>Unusable</td></tr>
+            </table>
+
+            <h3>Anytime</h3>
+            <table class="shortcut-table">
+                <tr><td><kbd>Backspace</kbd> <kbd>Tab</kbd> <kbd>Z</kbd></td><td>Step back; undo the last image if nothing is selected</td></tr>
+                <tr><td><kbd>Y</kbd></td><td>Redo</td></tr>
+                <tr><td><kbd>F</kbd></td><td>Flag &amp; skip (sends the image to the back of the queue)</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>Clear the current selection</td></tr>
+                <tr><td><kbd>+</kbd> <kbd>_</kbd></td><td>Zoom in / out</td></tr>
+                <tr><td><kbd>Ctrl</kbd> + scroll</td><td>Zoom with the mouse wheel</td></tr>
+                <tr><td><kbd>?</kbd> <kbd>H</kbd></td><td>Show / hide this help</td></tr>
+            </table>
+        </div>
+        <div class="help-footer">Press <kbd>?</kbd> any time to reopen this panel.</div>
+    </aside>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>

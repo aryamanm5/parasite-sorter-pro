@@ -825,7 +825,7 @@
 
         .class-btn.selected .key-hint {
             background: var(--text-primary);
-            color: #fff;
+            color: var(--bg-secondary);
         }
 
         .class-btn .count-badge {
@@ -1063,4 +1063,197 @@
                 background: var(--bg-secondary);
                 border-bottom: 1px solid var(--border-light);
             }
+        }
+
+        /* =====================================================================
+           DARK MODE
+           Follows the OS setting by default. The header toggle pins an explicit
+           choice on <html data-theme>, so the dark palette is defined twice:
+           once for "system says dark and no override", once for the override.
+           ===================================================================== */
+        :root { color-scheme: light; }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                color-scheme: dark;
+                --bg-primary: #1c1c1e;
+                --bg-secondary: #2c2c2e;
+                --bg-tertiary: #3a3a3c;
+                --bg-card: #333336;
+                --text-primary: #f2f2f7;
+                --text-secondary: #a1a1a8;
+                --text-tertiary: #7c7c82;
+                --accent-hover: #5d6f88;
+                --pastel-blue: #44536a;
+                --pastel-green: #3f5a4e;
+                --pastel-yellow: #5a5240;
+                --pastel-orange: #64503f;
+                --pastel-red: #5e4343;
+                --pastel-purple: #4d475c;
+                --pastel-teal: #3c5858;
+                --status-usable: #3d553f;
+                --status-usable-hover: #4a654c;
+                --status-usable-text: #cfe6cf;
+                --status-limited: #5a5540;
+                --status-limited-hover: #6a644c;
+                --status-limited-text: #ebe4c8;
+                --status-unusable: #5e4040;
+                --status-unusable-hover: #6e4c4c;
+                --status-unusable-text: #f0d0d0;
+                --border: #48484a;
+                --border-light: #3a3a3c;
+                --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+                --shadow-md: 0 2px 8px rgba(0,0,0,0.45);
+            }
+        }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --bg-primary: #1c1c1e;
+            --bg-secondary: #2c2c2e;
+            --bg-tertiary: #3a3a3c;
+            --bg-card: #333336;
+            --text-primary: #f2f2f7;
+            --text-secondary: #a1a1a8;
+            --text-tertiary: #7c7c82;
+            --accent-hover: #5d6f88;
+            --pastel-blue: #44536a;
+            --pastel-green: #3f5a4e;
+            --pastel-yellow: #5a5240;
+            --pastel-orange: #64503f;
+            --pastel-red: #5e4343;
+            --pastel-purple: #4d475c;
+            --pastel-teal: #3c5858;
+            --status-usable: #3d553f;
+            --status-usable-hover: #4a654c;
+            --status-usable-text: #cfe6cf;
+            --status-limited: #5a5540;
+            --status-limited-hover: #6a644c;
+            --status-limited-text: #ebe4c8;
+            --status-unusable: #5e4040;
+            --status-unusable-hover: #6e4c4c;
+            --status-unusable-text: #f0d0d0;
+            --border: #48484a;
+            --border-light: #3a3a3c;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+            --shadow-md: 0 2px 8px rgba(0,0,0,0.45);
+        }
+
+        /* Help + theme buttons are always in the header, before and after upload. */
+        /* Narrow windows: wrap the header buttons onto a second row instead of
+           clipping them off the right edge. */
+        @media (max-width: 1360px) {
+            .header, .header-right { flex-wrap: wrap; row-gap: 8px; }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* =====================================================================
+           HELP PANEL — slides in from the right; ? or H toggles it.
+           ===================================================================== */
+        .help-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 380px;
+            max-width: 100vw;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-light);
+            box-shadow: -6px 0 24px rgba(0,0,0,0.15);
+            z-index: 1500;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.25s ease;
+            visibility: hidden;
+        }
+
+        .help-panel.open {
+            transform: translateX(0);
+            visibility: visible;
+        }
+
+        .help-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .help-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 18px 24px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        .help-body h3 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin: 18px 0 8px;
+        }
+
+        .help-body h3:first-child { margin-top: 0; }
+
+        .help-body ol {
+            padding-left: 20px;
+        }
+
+        .help-body li { margin-bottom: 6px; }
+
+        .help-body p { margin-bottom: 8px; color: var(--text-secondary); }
+
+        .shortcut-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .shortcut-table td {
+            padding: 5px 0;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: top;
+        }
+
+        .shortcut-table tr:last-child td { border-bottom: none; }
+
+        .shortcut-table td:first-child {
+            width: 42%;
+            padding-right: 10px;
+            white-space: nowrap;
+        }
+
+        kbd {
+            display: inline-block;
+            min-width: 22px;
+            padding: 1px 6px;
+            margin: 1px 1px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-bottom-width: 2px;
+            border-radius: 5px;
+        }
+
+        .help-footer {
+            padding: 12px 18px;
+            border-top: 1px solid var(--border-light);
+            font-size: 12px;
+            color: var(--text-tertiary);
         }

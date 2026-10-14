@@ -48,9 +48,17 @@ Behind the scenes each labelled image is copied into `sorted/<Class>/<Quality>/`
 | Key | Action |
 |-----|--------|
 | `1`–`0`, `-` | Select class / alternative |
-| `Z` | Undo |
+| `Q` / `W` / `E` / `R` | Platelet / Uninfected / Cannot Determine / Other Artefact |
+| `Enter` | No alternative (step 2) · Usable (step 3) |
+| `'` / `Shift` | Limited / Unusable (step 3) |
+| `Z`, `Backspace`, `Tab` | Step back; undo the last image when nothing is selected |
 | `Y` | Redo |
 | `F` | Flag & skip (sends the image to the back of the queue) |
+| `Esc` | Clear the current selection |
+| `+` / `_` | Zoom in / out |
+| `?`, `H` | Show / hide the help panel |
+
+Click **❓ Help** in the header for a quick how-to and the full shortcut list (it opens automatically on your first visit). The **🌙 / ☀️** button switches theme; by default the app follows your system's light/dark setting.
 
 ## Export format
 

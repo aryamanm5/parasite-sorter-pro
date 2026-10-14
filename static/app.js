@@ -1,6 +1,6 @@
 
-        // Quick class shortcuts: pure keybindings, no server counterpart.
-        const QUICK_KEYS = { q: '9', w: '0', e: '-' };
+        // Letter shortcuts for the class keys, from config.py.
+        const QUICK_KEYS = CFG.quickKeys;
 
         // =====================================================================
         // STATE
@@ -710,10 +710,67 @@
         });
 
         // =====================================================================
+        // THEME — follows the OS light/dark setting until the user picks one.
+        // Choosing the mode the OS already shows drops the override, so the
+        // app goes back to tracking the system.
+        // =====================================================================
+        const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+        function isDark() {
+            const t = document.documentElement.dataset.theme;
+            return t ? t === 'dark' : darkQuery.matches;
+        }
+
+        function updateThemeButton() {
+            const btn = document.getElementById('theme-toggle');
+            btn.textContent = isDark() ? '☀️' : '🌙';
+            btn.title = isDark() ? 'Switch to light mode' : 'Switch to dark mode';
+        }
+
+        function toggleTheme() {
+            const next = isDark() ? 'light' : 'dark';
+            const followsSystem = (next === 'dark') === darkQuery.matches;
+            if (followsSystem) delete document.documentElement.dataset.theme;
+            else document.documentElement.dataset.theme = next;
+            try {
+                if (followsSystem) localStorage.removeItem('theme');
+                else localStorage.setItem('theme', next);
+            } catch (e) {}
+            updateThemeButton();
+        }
+
+        darkQuery.addEventListener('change', updateThemeButton);
+        updateThemeButton();
+
+        // =====================================================================
+        // HELP PANEL — opens on a first visit; ? or H toggles it after that.
+        // =====================================================================
+        function helpOpen() {
+            return document.getElementById('help-panel').classList.contains('open');
+        }
+
+        function toggleHelp(open = !helpOpen()) {
+            const panel = document.getElementById('help-panel');
+            panel.classList.toggle('open', open);
+            panel.setAttribute('aria-hidden', String(!open));
+        }
+
+        try {
+            if (!localStorage.getItem('helpSeen')) {
+                toggleHelp(true);
+                localStorage.setItem('helpSeen', '1');
+            }
+        } catch (e) {}
+
+        // =====================================================================
         // KEYBOARD SHORTCUTS
         // =====================================================================
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.metaKey || e.ctrlKey) return;   // leave browser shortcuts (Cmd+R etc.) alone
+
+            if (e.key === '?' || e.key.toLowerCase() === 'h') { e.preventDefault(); toggleHelp(); return; }
+            if (e.key === 'Escape' && helpOpen()) { e.preventDefault(); toggleHelp(false); return; }
 
             // Overlays swallow shortcuts: any key continues past the halfway screen;
             // the end summary ignores them until Close.
@@ -722,7 +779,8 @@
 
             const key = e.key;
 
-            // Q/W/E = quick class shortcuts for Platelet / Uninfected / Cannot Determine,
+            // Q/W/E/R = quick class shortcuts for Platelet / Uninfected / Cannot Determine /
+            // Other Artefact,
             // mapped to their digits and dispatched exactly like the number keys so
             // pressing the same quick key again during Step 2 means "No Alternative".
             const digit = QUICK_KEYS[key.toLowerCase()] !== undefined
@@ -754,6 +812,7 @@
                 'Shift': () => finalizeWithStatus('Unusable'),
                 'z': stepBack,
                 'Backspace': stepBack,
+                'Tab': stepBack,
                 'y': executeRedo,
                 'f': flagImage,
                 '+': zoomIn,

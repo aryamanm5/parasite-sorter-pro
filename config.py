@@ -50,6 +50,9 @@ SKIP_ALTERNATIVE_CLASSES = ['-']
 # is not a judgement anyone makes.
 NOT_OFFERED_AS_ALTERNATIVE = ['0', '-']
 
+# Letter shortcuts, dispatched exactly like their digits.
+QUICK_KEYS = {'q': '9', 'w': '0', 'e': '-', 'r': '8'}
+
 # Adjacency mapping for first row (which keys are the expected alternative)
 ADJACENCY_MAP = {
     '1': ['2'],           # Early Ring -> Middle Ring
@@ -67,5 +70,6 @@ JS_CONFIG = {
     'autoAdvance': AUTO_ADVANCE_CLASSES,
     'skipAlternative': SKIP_ALTERNATIVE_CLASSES,
     'notOfferedAsAlternative': NOT_OFFERED_AS_ALTERNATIVE,
+    'quickKeys': QUICK_KEYS,
     'defaultZoom': DEFAULT_ZOOM,
 }
