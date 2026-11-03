@@ -1038,9 +1038,18 @@
         .overlay-card .btn { margin: 4px; }
 
         /* What's-new popup */
-        .whats-new-card { max-width: 460px; }
-        .whats-new-card p { line-height: 1.5; }
+        .whats-new-card { max-width: 340px; }
         .whats-new-card .whats-new-small { font-size: 12.5px; }
+
+        .version-tag {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            background: var(--bg-tertiary);
+            padding: 2px 7px;
+            border-radius: 6px;
+            margin-left: 2px;
+        }
         .fast-keys {
             display: flex;
             justify-content: center;

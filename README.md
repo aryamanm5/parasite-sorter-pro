@@ -39,7 +39,7 @@ Each image goes through a short, mostly one-tap flow:
 2. **Pick an alternative** (optional) — for the ambiguous ring stages the app suggests the neighbouring class ("Early Ring, or possibly Middle Ring"). This second choice is filed separately so it never inflates your primary counts.
 3. **Rate the image quality** — *Usable*, *Limited*, or *Unusable*.
 
-**Fast sort:** `A` (Uninfected) and `S` (Other Artefact) sit side by side on the home row and file the image as *Usable* with no alternative in a single press — built for the uninfected-cell sorting phase. A one-time "What's new" popup tells everyone about it on their next visit (bump `WHATS_NEW_VERSION` in `config.py` to show a new one).
+**Fast sort:** `U` (Uninfected) and `Y` (Other Artefact) sit side by side and file the image as *Usable* with no alternative in a single press — built for the uninfected-cell sorting phase. A one-time "What's new" popup tells everyone about it on their next visit (bump `WHATS_NEW_VERSION` in `config.py` to show a new one).
 
 Two shortcuts keep it quick: **Uninfected** (`0`) files as *Usable* in one keypress, and **Cannot Determine** (`-`) skips straight to the quality step.
 
@@ -51,11 +51,11 @@ Behind the scenes each labelled image is copied into `sorted/<Class>/<Quality>/`
 |-----|--------|
 | `1`–`0`, `-` | Select class / alternative |
 | `Q` / `W` / `E` / `R` | Platelet / Uninfected / Cannot Determine / Other Artefact |
-| `A` / `S` | **Fast sort:** Uninfected / Other Artefact — filed as Usable, no alternative, next image in one press |
+| `U` / `Y` | **Fast sort:** Uninfected / Other Artefact — filed as Usable, no alternative, next image in one press |
 | `Enter` | No alternative (step 2) · Usable (step 3) |
 | `'` / `Shift` | Limited / Unusable (step 3) |
 | `Z`, `Backspace`, `Tab` | Step back; undo the last image when nothing is selected |
-| `Y` | Redo |
+| `X` | Redo |
 | `F` | Flag & skip (sends the image to the back of the queue) |
 | `Esc` | Clear the current selection |
 | `+` / `_` | Zoom in / out |

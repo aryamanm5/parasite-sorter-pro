@@ -1,7 +1,7 @@
 
         // Letter shortcuts for the class keys, from config.py.
         const QUICK_KEYS = CFG.quickKeys;
-        // One-press "file as <class>, Usable, next image" keys (A / S), from config.py.
+        // One-press "file as <class>, Usable, next image" keys (U / Y), from config.py.
         const FAST_SORT_KEYS = CFG.fastSortKeys;
 
         // =====================================================================
@@ -818,7 +818,7 @@
 
             const key = e.key;
 
-            // A / S fast sort: Uninfected / Other Artefact, Usable, next image.
+            // U / Y fast sort: Uninfected / Other Artefact, Usable, next image.
             const fast = FAST_SORT_KEYS[key.toLowerCase()];
             if (fast !== undefined && !e.altKey) {
                 e.preventDefault();
@@ -860,7 +860,7 @@
                 'z': stepBack,
                 'Backspace': stepBack,
                 'Tab': stepBack,
-                'y': executeRedo,
+                'x': executeRedo,
                 'f': flagImage,
                 '+': zoomIn,
                 '=': zoomIn,
