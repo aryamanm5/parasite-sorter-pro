@@ -15,10 +15,15 @@ You're staring at hundreds of blood-smear crops that each need a label. This app
 - **Upload a ZIP** of images and start immediately — a built-in visual guide and decision cheat-sheet sit right beside the viewer.
 - **Classify with the number keys.** Each of the 11 classes is a keypress (`1`–`0`, `-`). Most images take one tap.
 - **Zoom, pan, undo, redo, flag** — everything you'd want when a call is hard.
-- **Save and resume.** Download progress as a CSV mid-session and re-upload it later to pick up where you left off.
+- **Autosave.** Your images and labels are kept in your browser. Close the tab, quit the browser, or hit a server restart, and everything comes back when you reopen the app, no clicks needed. Downloading the CSV clears that saved copy, so the next visit starts fresh.
+- **Save and resume across computers.** Download progress as a CSV and re-upload it later with **Load** to pick up where you left off.
 - **Track your pace.** Live timer shows current / last / average time per image, plus a running per-class breakdown.
 
-Everything is per-session and in-memory: your images live in a temporary folder that's cleaned up automatically after 2 hours of inactivity.
+On the server, everything is per-session and in-memory: your images live in a temporary folder that's cleaned up automatically after 2 hours of inactivity (or when the server restarts).
+
+### How autosave works
+
+The browser keeps a copy of the uploaded ZIP and your label CSV in IndexedDB, updated after every label, undo, redo and flag. When the app opens, or an action fails, and the server has no session for you, the browser re-sends both through the normal upload and Load routes, and you carry on where you stopped. One saved dataset per browser: uploading a new ZIP replaces it, and 🔄 Reset or 📥 Download clears it. It doesn't follow you to another browser or computer, and it doesn't keep track of which images you flagged.
 
 ## The classes
 

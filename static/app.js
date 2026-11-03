@@ -620,6 +620,9 @@
 
                 const data = await res.json();
                 if (!data.success) {
+                    // The server may have restarted (deploy / sleep) and lost the
+                    // session mid-sort; bring it back from the browser copy.
+                    if (await autoRestore()) return;
                     showToast(data.message, true);
                     return;
                 }
@@ -628,6 +631,7 @@
                 applyState(data);
                 updateUI();
                 checkMilestones();
+                scheduleAutosave();
             } catch (e) {
                 showToast('Request failed', true);
             }
@@ -664,8 +668,14 @@
             a.remove();
         }
 
+        // Downloading the CSV means this work is safely saved, so the browser copy
+        // is marked to be forgotten: the next time the app opens, it starts fresh.
+        // Sorting more after downloading saves again as normal.
         function saveProgress() {
-            if (state.totalSorted > 0) triggerDownload('/save_progress');
+            if (state.totalSorted === 0) return;
+            triggerDownload('/save_progress');
+            clearTimeout(autosaveTimer);
+            autosaveMarkDownloaded();
         }
 
         async function resetSession() {
@@ -679,6 +689,7 @@
             try {
                 const data = await (await fetch('/reset', { method: 'POST' })).json();
                 if (data.success) {
+                    await autosaveClear();
                     resetRunStats();
                     showToast('Session reset');
                     await fetchState();
@@ -691,32 +702,155 @@
         // =====================================================================
         // FILE UPLOADS
         // =====================================================================
-        async function uploadFile(url, field, file) {
+        // Returns true on success. `name` is needed when `file` is a plain Blob
+        // (the autosave restore path) so the server still sees .zip / .csv.
+        async function uploadFile(url, field, file, name, quiet = false) {
             const formData = new FormData();
-            formData.append(field, file);
+            formData.append(field, file, name || file.name);
 
             try {
                 const data = await (await fetch(url, { method: 'POST', body: formData })).json();
-                showToast(data.message, !data.success);
-                if (data.success) await fetchState();
+                if (!quiet || !data.success) showToast(data.message, !data.success);
+                if (data.success && !quiet) await fetchState();
+                return data.success;
             } catch (e) {
                 showToast('Upload failed', true);
+                return false;
             }
         }
 
         document.getElementById('dataset-input').addEventListener('change', async (e) => {
             if (!e.target.files[0]) return;
+            const file = e.target.files[0];
             resetRunStats();   // fresh dataset, fresh run
             showToast('Uploading...');
-            await uploadFile('/upload_dataset', 'dataset_zip', e.target.files[0]);
+            if (await uploadFile('/upload_dataset', 'dataset_zip', file)) {
+                await autosaveStoreZip(file);   // new dataset replaces any old save
+            }
             e.target.value = '';
         });
 
         document.getElementById('progress-input').addEventListener('change', async (e) => {
             if (!e.target.files[0]) return;
-            await uploadFile('/upload_progress', 'progress_csv', e.target.files[0]);
+            if (await uploadFile('/upload_progress', 'progress_csv', e.target.files[0])) scheduleAutosave();
             e.target.value = '';
         });
+
+        // =====================================================================
+        // AUTOSAVE — the browser keeps the uploaded ZIP and the label CSV in
+        // IndexedDB (survives closing tabs and quitting the browser). Whenever the
+        // server has no session (browser was quit, deploy, Render sleep, 2-hour
+        // cleanup), both are re-sent through the normal upload + Load routes, so
+        // the images and labels come back with no clicks. One record per browser.
+        // =====================================================================
+        const AUTOSAVE_DB = 'parasite-sorter', AUTOSAVE_STORE = 'autosave', AUTOSAVE_KEY = 'current';
+        let autosaveTimer = null;
+        let restoring = false;
+
+        function idb(mode, fn) {
+            return new Promise((resolve, reject) => {
+                let open;
+                try { open = indexedDB.open(AUTOSAVE_DB, 1); } catch (e) { return reject(e); }
+                open.onupgradeneeded = () => open.result.createObjectStore(AUTOSAVE_STORE);
+                open.onerror = () => reject(open.error);
+                open.onsuccess = () => {
+                    const db = open.result;
+                    const tx = db.transaction(AUTOSAVE_STORE, mode);
+                    const req = fn(tx.objectStore(AUTOSAVE_STORE));
+                    tx.oncomplete = () => { db.close(); resolve(req && req.result); };
+                    tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
+                };
+            });
+        }
+
+        const autosaveGet = () => idb('readonly', s => s.get(AUTOSAVE_KEY)).catch(() => null);
+        const autosavePut = (rec) => idb('readwrite', s => s.put(rec, AUTOSAVE_KEY)).catch(() => {});
+        const autosaveClear = () => idb('readwrite', s => s.delete(AUTOSAVE_KEY)).catch(() => {});
+
+        async function autosaveStoreZip(file) {
+            try {
+                // ArrayBuffer rather than the File itself: stores reliably in every browser.
+                const zip = await file.arrayBuffer();
+                await autosavePut({ zip, zipName: file.name, csv: '', downloaded: false, savedAt: Date.now() });
+            } catch (e) {
+                await autosaveClear();   // too big / no storage: fall back to no autosave
+            }
+        }
+
+        // Labels changed: refresh the saved CSV shortly after (bursts of keys = one save).
+        function scheduleAutosave() {
+            if (restoring) return;
+            clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(autosaveLabels, 400);
+        }
+
+        async function autosaveLabels() {
+            const rec = await autosaveGet();
+            if (!rec) return;
+            let csv = '';
+            try {
+                const res = await fetch('/save_progress');
+                if (res.ok) csv = await res.text();   // 400 = no labels yet
+            } catch (e) { return; }
+            await autosavePut({ ...rec, csv, downloaded: false, savedAt: Date.now() });
+        }
+
+        async function autosaveMarkDownloaded() {
+            const rec = await autosaveGet();
+            if (rec) await autosavePut({ ...rec, downloaded: true });
+        }
+
+        // Re-send the saved ZIP + labels if the server has lost this session.
+        // Returns true if it restored something.
+        async function autoRestore() {
+            if (restoring) return false;
+            const rec = await autosaveGet();
+            if (!rec || rec.downloaded) return false;
+
+            let server;
+            try { server = await (await fetch('/state')).json(); } catch (e) { return false; }
+            if (server.upload_complete) return false;   // server still has it
+
+            restoring = true;
+            try {
+                showToast('Restoring your last session…');
+                const zip = new Blob([rec.zip], { type: 'application/zip' });
+                if (!await uploadFile('/upload_dataset', 'dataset_zip', zip, rec.zipName, true)) return false;
+                if (rec.csv) {
+                    const csv = new Blob([rec.csv], { type: 'text/csv' });
+                    await uploadFile('/upload_progress', 'progress_csv', csv, 'autosave.csv', true);
+                }
+
+                const data = await (await fetch('/state')).json();
+                resetRunStats();
+                const total = data.remaining_count + data.total_sorted;
+                // Don't re-pop the halfway screen for a milestone already passed.
+                halfwayShown = data.total_sorted >= Math.floor(total / 2);
+                state.uploadComplete = data.upload_complete;
+                applyState(data);
+                updateUI();
+                checkMilestones();
+                showToast(`Restored your last session — ${data.total_sorted} of ${total} sorted`);
+                return true;
+            } catch (e) {
+                return false;
+            } finally {
+                restoring = false;
+            }
+        }
+
+        async function autosaveStartup() {
+            const rec = await autosaveGet();
+            if (rec && rec.downloaded) {
+                // The CSV was downloaded last time: forget that work and start fresh.
+                await autosaveClear();
+                try { await fetch('/reset', { method: 'POST' }); } catch (e) {}
+                resetRunStats();
+            } else if (await autoRestore()) {
+                return;
+            }
+            await fetchState();
+        }
 
         // =====================================================================
         // THEME — follows the OS light/dark setting until the user picks one.
@@ -893,7 +1027,7 @@
         // =====================================================================
         // INIT
         // =====================================================================
-        window.onload = function() {
-            fetchState();
+        window.onload = async function() {
             setZoom(CFG.defaultZoom);
+            await autosaveStartup();
         };
