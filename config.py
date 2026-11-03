@@ -53,13 +53,16 @@ NOT_OFFERED_AS_ALTERNATIVE = ['0', '-']
 # Letter shortcuts, dispatched exactly like their digits.
 QUICK_KEYS = {'q': '9', 'w': '0', 'e': '-', 'r': '8'}
 
+# Shown in the header. Bump on every release.
+APP_VERSION = '2.6.1'
+
 # Fast-sort keys: one press files the image as <class>, no alternative, Usable, and
-# moves straight to the next image. Side by side on the home row so the two labels
-# used most during the uninfected-cell phase sit under adjacent fingers.
-FAST_SORT_KEYS = {'a': '0', 's': '8'}   # A = Uninfected, S = Other Artefact
+# moves straight to the next image. Side by side so the two labels used most during
+# the uninfected-cell phase sit under adjacent fingers.
+FAST_SORT_KEYS = {'u': '0', 'y': '8'}   # U = Uninfected, Y = Other Artefact
 
 # Bump this to show the "What's new" popup again to everyone on their next visit.
-WHATS_NEW_VERSION = '2.6-fast-sort'
+WHATS_NEW_VERSION = '2.6.1'
 
 # Adjacency mapping for first row (which keys are the expected alternative)
 ADJACENCY_MAP = {
@@ -81,5 +84,6 @@ JS_CONFIG = {
     'quickKeys': QUICK_KEYS,
     'fastSortKeys': FAST_SORT_KEYS,
     'whatsNewVersion': WHATS_NEW_VERSION,
+    'appVersion': APP_VERSION,
     'defaultZoom': DEFAULT_ZOOM,
 }
