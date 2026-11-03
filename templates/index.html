@@ -306,7 +306,7 @@
                     {% for key in row %}
                     <button class="class-btn" data-key="{{ key }}" onclick="selectLabel('{{ key }}')">
                         {{ cfg.classMap[key] }}
-                        <span class="key-hint">{{ key }}</span>
+                        <span class="key-hint">{{ key }}{% for letter, k in cfg.fastSortKeys.items() if k == key %} · {{ letter | upper }}{% endfor %}</span>
                         <span class="count-badge" id="count-{{ key }}">0</span>
                     </button>
                     {% endfor %}
@@ -327,6 +327,24 @@
         </div>
     </div>
 
+    <!-- What's new: shown once per cfg.whatsNewVersion (bump it in config.py to re-show). -->
+    <div class="overlay hidden" id="whats-new-overlay" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
+        <div class="overlay-card whats-new-card">
+            <div class="overlay-icon">⚡</div>
+            <h2 id="whats-new-title">New: one-press fast sort</h2>
+            <p>For the uninfected-cell sorting phase, the two most-used labels now each take a single key.
+               One press files the image as <b>Usable</b> with no alternative and jumps to the next image.</p>
+            <div class="fast-keys">
+                <div class="fast-key"><kbd>A</kbd><span>Uninfected</span></div>
+                <div class="fast-key"><kbd>S</kbd><span>Other Artefact</span></div>
+            </div>
+            <p class="whats-new-small">They sit side by side on the home row, so you can keep two fingers resting on them.
+               The number keys still work as before, and <kbd>Backspace</kbd> undoes a fast sort.</p>
+            <button class="btn btn-primary" onclick="hideWhatsNew()">Got it</button>
+            <div class="overlay-hint">Press Enter to close · find this again under ❓ Help</div>
+        </div>
+    </div>
+
     <!-- Help panel: how-to for new users + every keyboard shortcut. ? or H toggles. -->
     <aside class="help-panel" id="help-panel" aria-hidden="true">
         <div class="help-header">
@@ -343,6 +361,13 @@
                 <li>Click <b>📥 Download</b> any time for a CSV of your labels. <b>📤 Load</b> that CSV later to pick up where you left off.</li>
             </ol>
             <p><b>Uninfected</b> is filed as Usable in one press. <b>Cannot Determine</b> skips the alternative step. The visual guide and cue table are in the left sidebar.</p>
+
+            <h3>⚡ Fast sort (one press, Usable, next image)</h3>
+            <table class="shortcut-table">
+                {% for letter, k in cfg.fastSortKeys.items() %}
+                <tr><td><kbd>{{ letter | upper }}</kbd></td><td>{{ cfg.classMap[k] }}</td></tr>
+                {% endfor %}
+            </table>
 
             <h3>Choose a class</h3>
             <table class="shortcut-table">
