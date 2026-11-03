@@ -1,6 +1,8 @@
 
         // Letter shortcuts for the class keys, from config.py.
         const QUICK_KEYS = CFG.quickKeys;
+        // One-press "file as <class>, Usable, next image" keys (A / S), from config.py.
+        const FAST_SORT_KEYS = CFG.fastSortKeys;
 
         // =====================================================================
         // STATE
@@ -556,6 +558,13 @@
             updateUI();
         }
 
+        // Fast sort: file the image as this class, no alternative, Usable — in one
+        // press, from any step (a half-made selection is simply discarded).
+        function fastSort(key) {
+            if (!state.currentImage || !(key in CFG.classMap)) return;
+            classify(key, null, 'Usable');
+        }
+
         function finalizeWithStatus(status) {
             if (sel.step !== 'status') {
                 showToast('Select a class first', true);
@@ -763,11 +772,41 @@
         } catch (e) {}
 
         // =====================================================================
+        // WHAT'S NEW POPUP — shown once per WHATS_NEW_VERSION (config.py).
+        // =====================================================================
+        let whatsNewActive = false;
+
+        function showWhatsNew() {
+            whatsNewActive = true;
+            document.getElementById('whats-new-overlay').classList.remove('hidden');
+        }
+
+        function hideWhatsNew() {
+            whatsNewActive = false;
+            document.getElementById('whats-new-overlay').classList.add('hidden');
+            try { localStorage.setItem('whatsNewSeen', CFG.whatsNewVersion); } catch (e) {}
+        }
+
+        try {
+            if (localStorage.getItem('whatsNewSeen') !== CFG.whatsNewVersion) showWhatsNew();
+        } catch (e) {
+            showWhatsNew();
+        }
+
+        // =====================================================================
         // KEYBOARD SHORTCUTS
         // =====================================================================
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             if (e.metaKey || e.ctrlKey) return;   // leave browser shortcuts (Cmd+R etc.) alone
+
+            // What's-new popup: Enter / Esc / Space closes it; other keys are swallowed
+            // so nothing gets sorted behind it.
+            if (whatsNewActive) {
+                e.preventDefault();
+                if (['Enter', 'Escape', ' '].includes(e.key)) hideWhatsNew();
+                return;
+            }
 
             if (e.key === '?' || e.key.toLowerCase() === 'h') { e.preventDefault(); toggleHelp(); return; }
             if (e.key === 'Escape' && helpOpen()) { e.preventDefault(); toggleHelp(false); return; }
@@ -778,6 +817,14 @@
             if (endActive) { e.preventDefault(); return; }
 
             const key = e.key;
+
+            // A / S fast sort: Uninfected / Other Artefact, Usable, next image.
+            const fast = FAST_SORT_KEYS[key.toLowerCase()];
+            if (fast !== undefined && !e.altKey) {
+                e.preventDefault();
+                fastSort(fast);
+                return;
+            }
 
             // Q/W/E/R = quick class shortcuts for Platelet / Uninfected / Cannot Determine /
             // Other Artefact,
