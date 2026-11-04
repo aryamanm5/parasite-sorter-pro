@@ -59,7 +59,7 @@ Behind the scenes each labelled image is copied into `sorted/<Class>/<Quality>/`
 | `U` / `Y` | **Fast sort:** Uninfected / Other Artefact — filed as Usable, no alternative, next image in one press |
 | `Enter` | No alternative (step 2) · Usable (step 3) |
 | `'` / `Shift` | Limited / Unusable (step 3) |
-| `Z`, `Backspace`, `Tab` | Step back; undo the last image when nothing is selected |
+| `Z`, `Backspace`, `I`, `Tab` | Step back; undo the last image when nothing is selected |
 | `X` | Redo |
 | `F` | Flag & skip (sends the image to the back of the queue) |
 | `Esc` | Clear the current selection |
