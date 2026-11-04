@@ -993,6 +993,7 @@
                 'Shift': () => finalizeWithStatus('Unusable'),
                 'z': stepBack,
                 'Backspace': stepBack,
+                'i': stepBack,
                 'Tab': stepBack,
                 'x': executeRedo,
                 'f': flagImage,

@@ -54,7 +54,7 @@ NOT_OFFERED_AS_ALTERNATIVE = ['0', '-']
 QUICK_KEYS = {'q': '9', 'w': '0', 'e': '-', 'r': '8'}
 
 # Shown in the header. Bump on every release.
-APP_VERSION = '3.0'
+APP_VERSION = '3.0.1'
 
 # Fast-sort keys: one press files the image as <class>, no alternative, Usable, and
 # moves straight to the next image. Side by side so the two labels used most during
